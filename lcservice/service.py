@@ -29,7 +29,7 @@ class Service( object ):
         self._nCallsInProgress = 0
 
         if self._originSecret is None:
-            self.logCritical( 'Origin verification disable, this should not be in production.' )
+            self.logCritical( 'Origin verification disabled, this should not be in production.' )
 
         if isinstance( self._originSecret, str ):
             self._originSecret = self._originSecret.encode()
