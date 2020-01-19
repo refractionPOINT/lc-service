@@ -19,7 +19,7 @@ def ServeCherryPy( service, interface = '0.0.0.0', port = 80, options = {} ):
     serverConfig.update( options )
     cherrypy.config.update( serverConfig )
     cherrypy.quickstart( _cherryPyServer( service ) )
-    service.onShutdown()
+    service._onShutdown()
 
 def _serviceApi(func):
     @functools.wraps(func)

@@ -1,10 +1,13 @@
 import limacharlie
+import gevent
+from gevent.lock import BoundedSemaphore
+import gevent.pool
+import gevent.util
 
 import time
 import hmac
 import hashlib
 import sys
-from threading import Lock
 import json
 import traceback
 import uuid
@@ -25,8 +28,10 @@ class Service( object ):
         self._serviceName = serviceName
         self._originSecret = originSecret
         self._startedAt = int( time.time() )
-        self._lock = Lock()
+        self._lock = BoundedSemaphore()
+        self._backgroundStopEvent = gevent.event.Event()
         self._nCallsInProgress = 0
+        self._threads = gevent.pool.Group()
 
         if self._originSecret is None:
             self.logCritical( 'Origin verification disabled, this should not be in production.' )
@@ -68,6 +73,7 @@ class Service( object ):
         jwt = data.get( 'jwt', None )
         oid = data.get( 'oid', None )
         msgId = data.get( 'mid', None )
+        deadline = data.get( 'deadline', None )
         eType = data.get( 'etype', None )
         data = data.get( 'data', {} )
 
@@ -100,6 +106,9 @@ class Service( object ):
         finally:
             with self._lock:
                 self._nCallsInProgress -= 1
+            now = time.time()
+            if deadline is not None and now > deadline:
+                self.logCritical( 'event %s over deadline by %ss' % ( eType, now - deadline ) )
 
     def response( self, isSuccess = True, isDoRetry = False, data = {} ):
         ret = {
@@ -142,11 +151,83 @@ class Service( object ):
             } ) )
             sys.stderr.write( "\n" )
 
+    # Helper functions.
+    def _managedThread( self, func, *args, **kw_args ):
+        # This function makes sure that while the target function
+        # is executed the thread is accounteded for in _threads so
+        # that if deinit is requested, it will wait for it. But this
+        # accounting does NOT occur while the target function is not
+        # yet executed. This way we can schedule calls a long time in
+        # the future and only wait for it if it actually started executing.
+        try:
+            self._threads.add( gevent.util.getcurrent() )
+            if self._backgroundStopEvent.wait( 0 ):
+                return
+            func( *args, **kw_args )
+        except gevent.GreenletExit:
+            raise
+        except:
+            self.logCritical( traceback.format_exc() )
+
+    def schedule( self, delay, func, *args, **kw_args ):
+        '''Schedule a recurring function.
+
+        Only use if your execution environment allows for
+        asynchronous execution (like a normal container).
+        Some environments like Cloud Functions (Lambda) or
+        Google Cloud Run may not allow for execution outside
+        of the processing of inbound queries.
+
+        :param delay: the number of seconds interval between calls
+        :param func: the function to call at interval
+        :param args: positional arguments to the function
+        :param kw_args: keyword arguments to the function
+        '''
+        if not self._backgroundStopEvent.wait( 0 ):
+            try:
+                func( *args, **kw_args )
+            except:
+                raise
+            finally:
+                if not self._backgroundStopEvent.wait( 0 ):
+                    gevent.spawn_later( delay, self._schedule, delay, func, *args, **kw_args )
+
+    def _schedule( self, delay, func, *args, **kw_args ):
+        if not self._backgroundStopEvent.wait( 0 ):
+            try:
+                self._managedThread( func, *args, **kw_args )
+            except:
+                raise
+            finally:
+                if not self._backgroundStopEvent.wait( 0 ):
+                    gevent.spawn_later( delay, self._schedule, delay, func, *args, **kw_args )
+
+    def delay( self, inDelay, func, *args, **kw_args ):
+        '''Delay the execution of a function.
+
+        Only use if your execution environment allows for
+        asynchronous execution (like a normal container).
+        Some environments like Cloud Functions (Lambda) or
+        Google Cloud Run may not allow for execution outside
+        of the processing of inbound queries.
+
+        :param inDelay: the number of seconds to execute into
+        :param func: the function to call
+        :param args: positional arguments to the function
+        :param kw_args: keyword arguments to the function
+        '''
+        gevent.spawn_later( inDelay, self._managedThread, func, *args, **kw_args )
+
     # LC Service Lifecycle Functions
     def onStartup( self ):
         '''Called when the service is first instantiated.
         '''
         self.log( "Starting up." )
+
+    def _onShutdown( self ):
+        self._backgroundStopEvent.set()
+        self._threads.join( timeout = 30 )
+        self.onShutdown()
 
     def onShutdown( self ):
         '''Called when the service is about to shut down.
