@@ -1,11 +1,11 @@
 import limacharlie
+
 import time
 import hmac
 import hashlib
 import sys
 from threading import Lock
 import json
-import functools
 import traceback
 import uuid
 
