@@ -9,6 +9,15 @@ import functools
 import traceback
 import uuid
 
+PROTOCOL_VERSION = 1
+
+class Request( object ):
+
+    def __init__( self, eventType, messageId, data ):
+        self.eventType = eventType
+        self.messageId = messageId
+        self.data = data
+
 class Service( object ):
 
     # Boilerplate code
@@ -25,6 +34,23 @@ class Service( object ):
         if isinstance( self._originSecret, str ):
             self._originSecret = self._originSecret.encode()
 
+        self._handlers = {
+            'health' : self._health,
+            'org_install' : self.onOrgInstalled,
+            'org_uninstall' : self.onOrgUninstalled,
+            'detection' : self.onDetection,
+            'request' : self.onRequest,
+            'update_state' : self.onUpdateState,
+            'org_per_1h' : self.every1HourPerOrg,
+            'org_per_3h' : self.every3HourPerOrg,
+            'org_per_12h' : self.every12HourPerOrg,
+            'org_per_24h' : self.every24HourPerOrg,
+            'once_per_1h' : self.every1HourGlobally,
+            'once_per_3h' : self.every3HourGlobally,
+            'once_per_12h' : self.every12HourGlobally,
+            'once_per_24h' : self.every24HourGlobally,
+        }
+
         self.onStartup()
 
     def _verifyOrigin( self, data, signature ):
@@ -37,31 +63,43 @@ class Service( object ):
         expected = hmac.new( self._originSecret, msg = data, digestmod = hashlib.sha256 ).hexdigest()
         return hmac.compare_digest( expected, signature )
 
-    def _apiCall(func):
-        @functools.wraps(func)
-        def wrapper( self, data ):
-            jwt = data.get( 'jwt', None )
-            oid = data.get( 'oid', None )
-            data = data.get( 'data', {} )
+    def _processEvent( self, data ):
+        version = data.get( 'version', None )
+        jwt = data.get( 'jwt', None )
+        oid = data.get( 'oid', None )
+        msgId = data.get( 'mid', None )
+        eType = data.get( 'etype', None )
+        data = data.get( 'data', {} )
 
-            lcApi = None
-            if oid is not None and jwt is not None:
-                invId = str( uuid.uuid4() )
-                lcApi = limacharlie.Manager( oid = oid, jwt = jwt, inv_id = invId )
+        if version is not None and version > PROTOCOL_VERSION:
+            return self.response( isSuccess = False,
+                                  isDoRetry = False,
+                                  data = { 'error' : 'unsupported version (> %s)' % ( PROTOCOL_VERSION, ) } )
 
-            try:
-                with self._lock:
-                    self._nCallsInProgress += 1
-                return func( self, lcApi, oid, data )
-            except:
-                exc = traceback.format_exc()
-                self.logCritical( exc )
-                return self.response( isSuccess = False, isDoRetry = True, data = { 'exception' : exc } )
-            finally:
-                with self._lock:
-                    self._nCallsInProgress -= 1
+        request = Request( eType, msgId, data )
 
-        return wrapper
+        handler = self._handlers.get( eType, None )
+        if handler is None:
+            return self.responseNotImplemented()
+
+        lcApi = None
+        if oid is not None and jwt is not None:
+            invId = str( uuid.uuid4() )
+            lcApi = limacharlie.Manager( oid = oid, jwt = jwt, inv_id = invId )
+
+        try:
+            with self._lock:
+                self._nCallsInProgress += 1
+            return handler( self, lcApi, oid, request )
+        except:
+            exc = traceback.format_exc()
+            self.logCritical( exc )
+            return self.response( isSuccess = False,
+                                  isDoRetry = True,
+                                  data = { 'exception' : exc } )
+        finally:
+            with self._lock:
+                self._nCallsInProgress -= 1
 
     def response( self, isSuccess = True, isDoRetry = False, data = {} ):
         ret = {
@@ -75,13 +113,14 @@ class Service( object ):
         return ret
 
     def responseNotImplemented( self ):
-        return self.response( isSuccess = False, data = { 'error' : 'not implemented' } )
+        return self.response( isSuccess = False,
+                              data = { 'error' : 'not implemented' } )
 
-    @_apiCall
     def _health( self, lc, oid, data ):
         with self._lock:
             nInProgress = self._nCallsInProgress
         return self.response( data = {
+            'version' : PROTOCOL_VERSION,
             'start_time' : self._startedAt,
             'calls_in_progress' : nInProgress,
         } )
@@ -89,101 +128,92 @@ class Service( object ):
     # Helper functions, feel free to override.
     def log( self, msg ):
         with self._lock:
-            sys.stdout.write( json.dumps( { 'time' : time.time(), 'msg' : msg } ) )
+            sys.stdout.write( json.dumps( {
+                'time' : time.time(),
+                'msg' : msg
+            } ) )
             sys.stdout.write( "\n" )
 
     def logCritical( self, msg ):
         with self._lock:
-            sys.stderr.write( json.dumps( { 'time' : time.time(), 'msg' : msg } ) )
+            sys.stderr.write( json.dumps( {
+                'time' : time.time(),
+                'msg' : msg
+            } ) )
             sys.stderr.write( "\n" )
 
     # LC Service Lifecycle Functions
-    @_apiCall
     def onStartup( self ):
         '''Called when the service is first instantiated.
         '''
         self.log( "Starting up." )
 
-    @_apiCall
     def onShutdown( self ):
         '''Called when the service is about to shut down.
         '''
         self.log( "Shutting down." )
 
-    @_apiCall
     def onOrgInstalled( self, lc, oid, data ):
         '''Called when a new organization subscribes to this service.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def onOrgUninstalled( self, lc, oid, data ):
         '''Called when an organization unsubscribes from this service.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def onDetection( self, lc, oid, data ):
         '''Called when a detection is received for an organization.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def onRequest( self, lc, oid, data ):
         '''Called when a request is made for the service by the organization.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def onUpdateState( self, lc, oid, data ):
         '''Called when the cloud requests the desired state of an organization.
         '''
         return self.responseNotImplemented()
 
     # LC Service Cron-like Functions
-    @_apiCall
     def every1HourPerOrg( self, lc, oid, data ):
         '''Called every hour for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every3HourPerOrg( self, lc, oid, data ):
         '''Called every 3 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every12HourPerOrg( self, lc, oid, data ):
         '''Called every 12 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every24HourPerOrg( self, lc, oid, data ):
         '''Called every 24 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every1HourGlobally( self, lc, oid, data ):
         '''Called every hour once per service.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every3HourGlobally( self, lc, oid, data ):
         '''Called every 3 hours once per service.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every12HourGlobally( self, lc, oid, data ):
         '''Called every 12 hours once per service.
         '''
         return self.responseNotImplemented()
 
-    @_apiCall
     def every24HourGlobally( self, lc, oid, data ):
         '''Called every 24 hours once per service.
         '''

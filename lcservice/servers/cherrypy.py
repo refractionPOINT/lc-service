@@ -45,4 +45,4 @@ class _cherryPyServer( object ):
     @cherrypy.expose
     @_serviceApi
     def default( self ):
-        return self._service._health( cherrypy.request.json )
+        return self._service._processEvent( cherrypy.request.json )
