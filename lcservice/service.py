@@ -98,7 +98,7 @@ class Service( object ):
         try:
             with self._lock:
                 self._nCallsInProgress += 1
-            resp = handler( self, lcApi, oid, request )
+            resp = handler( lcApi, oid, request )
             if resp is True:
                 # Shotcut for simple success.
                 resp = self.response( isSuccess = True )
