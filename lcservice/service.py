@@ -45,7 +45,6 @@ class Service( object ):
             'org_uninstall' : self.onOrgUninstalled,
             'detection' : self.onDetection,
             'request' : self.onRequest,
-            'update_state' : self.onUpdateState,
             'org_per_1h' : self.every1HourPerOrg,
             'org_per_3h' : self.every3HourPerOrg,
             'org_per_12h' : self.every12HourPerOrg,
@@ -267,11 +266,6 @@ class Service( object ):
 
     def onRequest( self, lc, oid, data ):
         '''Called when a request is made for the service by the organization.
-        '''
-        return self.responseNotImplemented()
-
-    def onUpdateState( self, lc, oid, data ):
-        '''Called when the cloud requests the desired state of an organization.
         '''
         return self.responseNotImplemented()
 
