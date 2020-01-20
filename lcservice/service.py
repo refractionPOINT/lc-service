@@ -67,7 +67,6 @@ class Service( object ):
         if isinstance( signature, bytes ):
             signature = signature.decode()
         expected = hmac.new( self._originSecret, msg = data, digestmod = hashlib.sha256 ).hexdigest()
-        self.log( '%s == %s' % ( expected, signature ) )
         return hmac.compare_digest( expected, signature )
 
     def _processEvent( self, data ):
@@ -157,6 +156,7 @@ class Service( object ):
                 'msg' : msg
             } ) )
             sys.stdout.write( "\n" )
+            sys.stdout.flush()
 
     def logCritical( self, msg ):
         with self._lock:
@@ -165,6 +165,7 @@ class Service( object ):
                 'msg' : msg
             } ) )
             sys.stderr.write( "\n" )
+            sys.stderr.flush()
 
     # Helper functions.
     def _managedThread( self, func, *args, **kw_args ):
