@@ -98,7 +98,13 @@ class Service( object ):
         try:
             with self._lock:
                 self._nCallsInProgress += 1
-            return handler( self, lcApi, oid, request )
+            resp = handler( self, lcApi, oid, request )
+            if not isinstance( resp, dict ):
+                self.logCritical( 'no response specified in %s, assuming success' % ( eType, ) )
+                resp = self.response( isSuccess = True,
+                                      isDoRetry = False,
+                                      data = {} )
+            return resp
         except:
             exc = traceback.format_exc()
             self.logCritical( exc )
