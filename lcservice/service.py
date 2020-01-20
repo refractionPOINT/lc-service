@@ -125,6 +125,7 @@ class Service( object ):
 
     def responseNotImplemented( self ):
         return self.response( isSuccess = False,
+                              isDoRetry = False,
                               data = { 'error' : 'not implemented' } )
 
     def _health( self, lc, oid, data ):
