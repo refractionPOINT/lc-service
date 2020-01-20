@@ -99,8 +99,14 @@ class Service( object ):
             with self._lock:
                 self._nCallsInProgress += 1
             resp = handler( self, lcApi, oid, request )
-            if not isinstance( resp, dict ):
-                self.logCritical( 'no response specified in %s, assuming success' % ( eType, ) )
+            if resp is True:
+                # Shotcut for simple success.
+                resp = self.response( isSuccess = True )
+            elif resp is False:
+                # Shortcut for simple failure no retry.
+                resp = self.response( isSuccess = False, isDoRetry = False )
+            elif not isinstance( resp, dict ):
+                self.logCritical( 'no valid response specified in %s, assuming success' % ( eType, ) )
                 resp = self.response( isSuccess = True,
                                       isDoRetry = False,
                                       data = {} )
