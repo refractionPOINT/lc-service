@@ -2,6 +2,6 @@
 
 export SPHINX_APIDOC_OPTIONS="members,no-undoc-members,show-inheritance"
 
-sphinx-apidoc -f -o ./docs/ limacharlie
+sphinx-apidoc -f -o ./docs/ lcservice
 
 cd docs ; make html ; cd ..
