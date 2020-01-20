@@ -59,7 +59,7 @@ class Service( object ):
         self.onStartup()
 
     def _verifyOrigin( self, data, signature ):
-        self.log( 'verify %s' % ( data, ) )
+        data = json.dumps( data, sort_keys = True )
         if self._originSecret is None:
             return True
         if isinstance( data, str ):

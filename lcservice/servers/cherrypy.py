@@ -31,7 +31,7 @@ def _serviceApi(func):
         # our code can be normalized.
         if not hasattr( request, 'json' ):
             setattr( request, 'json', {} )
-        if not self._service._verifyOrigin( request.body.read(), request.headers.get( 'lc-svc-sig', '' ) ):
+        if not self._service._verifyOrigin( request.json, request.headers.get( 'lc-svc-sig', '' ) ):
             raise cherrypy.HTTPError( 401, 'unauthorized: bad origin signature' )
         return func( self, *args, **kwargs)
 
