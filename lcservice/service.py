@@ -59,6 +59,7 @@ class Service( object ):
         self.onStartup()
 
     def _verifyOrigin( self, data, signature ):
+        self.log( 'verify %s' % ( data, ) )
         if self._originSecret is None:
             return True
         if isinstance( data, str ):
@@ -66,6 +67,7 @@ class Service( object ):
         if isinstance( signature, bytes ):
             signature = signature.decode()
         expected = hmac.new( self._originSecret, msg = data, digestmod = hashlib.sha256 ).hexdigest()
+        self.log( '%s == %s' % ( expected, signature ) )
         return hmac.compare_digest( expected, signature )
 
     def _processEvent( self, data ):
