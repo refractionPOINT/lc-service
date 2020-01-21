@@ -36,11 +36,11 @@ class ExampleService( lcservice.Service ):
         self.subscribeToDetect( 'detected-test-rule-1' )
         self.subscribeToDetect( 'detected-test-rule-2' )
 
-    def onOrgInstalled( self, lc, oid, data ):
+    def onOrgInstalled( self, lc, oid, request ):
         print( 'Org %s just subscribed.' % ( oid, ) )
 
         # First we apply our rules for the first time.
-        self.every1HourPerOrg( lc, oid, data )
+        self.every1HourPerOrg( lc, oid, request )
 
         # We will be querying sensors in real-time so
         # we will make this session interactive.
@@ -66,7 +66,7 @@ class ExampleService( lcservice.Service ):
 
         return True
 
-    def every1HourPerOrg( self, lc, oid, data ):
+    def every1HourPerOrg( self, lc, oid, request ):
         sync = limacharlie.Sync()
 
         rules = {
@@ -78,7 +78,7 @@ class ExampleService( lcservice.Service ):
 
         return True
 
-    def onOrgUninstalled( self, lc, oid, data ):
+    def onOrgUninstalled( self, lc, oid, request ):
         self.log( "Goodbye %s" % ( oid, ) )
 
         # Remove all out detections.
@@ -87,8 +87,8 @@ class ExampleService( lcservice.Service ):
 
         return True
 
-    def onDetection( self, lc, oid, data ):
-        self.log( "Received a detection: %s" % ( json.dumps( data ), ) )
+    def onDetection( self, lc, oid, request ):
+        self.log( "Received a detection: %s" % ( json.dumps( request.data ), ) )
 
         return True
 
