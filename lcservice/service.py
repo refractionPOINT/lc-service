@@ -139,7 +139,7 @@ class Service( object ):
                               isDoRetry = False,
                               data = { 'error' : 'not implemented' } )
 
-    def _health( self, lc, oid, data ):
+    def _health( self, lc, oid, request ):
         with self._lock:
             nInProgress = self._nCallsInProgress
         return self.response( data = {
@@ -260,63 +260,63 @@ class Service( object ):
         '''
         self.log( "Shutting down." )
 
-    def onOrgInstalled( self, lc, oid, data ):
+    def onOrgInstalled( self, lc, oid, request ):
         '''Called when a new organization subscribes to this service.
         '''
         return self.responseNotImplemented()
 
-    def onOrgUninstalled( self, lc, oid, data ):
+    def onOrgUninstalled( self, lc, oid, request ):
         '''Called when an organization unsubscribes from this service.
         '''
         return self.responseNotImplemented()
 
-    def onDetection( self, lc, oid, data ):
+    def onDetection( self, lc, oid, request ):
         '''Called when a detection is received for an organization.
         '''
         return self.responseNotImplemented()
 
-    def onRequest( self, lc, oid, data ):
+    def onRequest( self, lc, oid, request ):
         '''Called when a request is made for the service by the organization.
         '''
         return self.responseNotImplemented()
 
     # LC Service Cron-like Functions
-    def every1HourPerOrg( self, lc, oid, data ):
+    def every1HourPerOrg( self, lc, oid, request ):
         '''Called every hour for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    def every3HourPerOrg( self, lc, oid, data ):
+    def every3HourPerOrg( self, lc, oid, request ):
         '''Called every 3 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    def every12HourPerOrg( self, lc, oid, data ):
+    def every12HourPerOrg( self, lc, oid, request ):
         '''Called every 12 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    def every24HourPerOrg( self, lc, oid, data ):
+    def every24HourPerOrg( self, lc, oid, request ):
         '''Called every 24 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
-    def every1HourGlobally( self, lc, oid, data ):
+    def every1HourGlobally( self, lc, oid, request ):
         '''Called every hour once per service.
         '''
         return self.responseNotImplemented()
 
-    def every3HourGlobally( self, lc, oid, data ):
+    def every3HourGlobally( self, lc, oid, request ):
         '''Called every 3 hours once per service.
         '''
         return self.responseNotImplemented()
 
-    def every12HourGlobally( self, lc, oid, data ):
+    def every12HourGlobally( self, lc, oid, request ):
         '''Called every 12 hours once per service.
         '''
         return self.responseNotImplemented()
 
-    def every24HourGlobally( self, lc, oid, data ):
+    def every24HourGlobally( self, lc, oid, request ):
         '''Called every 24 hours once per service.
         '''
         return self.responseNotImplemented()
