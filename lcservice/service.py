@@ -244,6 +244,31 @@ class Service( object ):
         '''
         gevent.spawn_later( inDelay, self._managedThread, func, *args, **kw_args )
 
+    def parallelExec( self, f, objects, timeout = None, maxConcurrent = None ):
+        '''Applies a function to N objects in parallel in N threads and waits to return the list results.
+
+        :param f: the function to apply
+        :param objects: the collection of objects to apply using f
+        :param timeouts: number of seconds to wait for results, or None for indefinitely
+        :param maxConcurrent: maximum number of concurrent tasks
+        '''
+
+        g = gevent.pool.Pool( size = maxConcurrent )
+        results = g.imap_unordered( lambda o: _retExecOrExc( f, o, timeout ), tuple( objects ) )
+        return list( results )
+
+    def parallelExecEx( self, f, objects, timeout = None, maxConcurrent = None ):
+        '''Applies a function to N objects in parallel in N threads and waits to return the generated results.
+
+        :param f: the function to apply
+        :param objects: the dict of objects to apply using f
+        :param timeouts: number of seconds to wait for results, or None for indefinitely
+        :param maxConcurrent: maximum number of concurrent tasks
+        '''
+
+        g = gevent.pool.Pool( size = maxConcurrent )
+        return g.imap_unordered( lambda o: _retExecOrExcWithKey( f, o, timeout ), objects.items() )
+
     # LC Service Lifecycle Functions
     def onStartup( self ):
         '''Called when the service is first instantiated.
@@ -320,3 +345,25 @@ class Service( object ):
         '''Called every 24 hours once per service.
         '''
         return self.responseNotImplemented()
+
+# Simple wrappers to enable clean parallel executions.
+def _retExecOrExc( f, o, timeout ):
+    try:
+        if timeout is None:
+            return f( o )
+        else:
+            with gevent.Timeout( timeout ):
+                return f( o )
+    except ( Exception, gevent.Timeout ) as e:
+        return e
+
+def _retExecOrExcWithKey( f, o, timeout ):
+    k, o = o
+    try:
+        if timeout is None:
+            return ( k, f( o ) )
+        else:
+            with gevent.Timeout( timeout ):
+                return ( k, f( o ) )
+    except ( Exception, gevent.Timeout ) as e:
+        return ( k, e )
