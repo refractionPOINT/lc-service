@@ -21,6 +21,10 @@ class Request( object ):
         self.messageId = messageId
         self.data = data
 
+def _unsupportedFunc( method ):
+    method.is_not_supported = True
+    return method
+
 class Service( object ):
 
     # Boilerplate code
@@ -142,12 +146,19 @@ class Service( object ):
     def _health( self, lc, oid, request ):
         with self._lock:
             nInProgress = self._nCallsInProgress
+        # List the callbacks that are implemented.
+        implementedCb = []
+        for cbName, method in self._handlers.items():
+            if hasattr( method, 'is_not_supported' ):
+                continue
+            implementedCb.append( cbName )
         return self.response( data = {
             'version' : PROTOCOL_VERSION,
             'start_time' : self._startedAt,
             'calls_in_progress' : nInProgress,
             'mtd' : {
                 'detect_subscriptions' : tuple( self._detectSubscribed ),
+                'callbacks' : implementedCb,
             },
         } )
 
@@ -285,62 +296,74 @@ class Service( object ):
         '''
         self.log( "Shutting down." )
 
+    @_unsupportedFunc
     def onOrgInstalled( self, lc, oid, request ):
         '''Called when a new organization subscribes to this service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onOrgUninstalled( self, lc, oid, request ):
         '''Called when an organization unsubscribes from this service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onDetection( self, lc, oid, request ):
         '''Called when a detection is received for an organization.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onRequest( self, lc, oid, request ):
         '''Called when a request is made for the service by the organization.
         '''
         return self.responseNotImplemented()
 
     # LC Service Cron-like Functions
+    @_unsupportedFunc
     def every1HourPerOrg( self, lc, oid, request ):
         '''Called every hour for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every3HourPerOrg( self, lc, oid, request ):
         '''Called every 3 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every12HourPerOrg( self, lc, oid, request ):
         '''Called every 12 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every24HourPerOrg( self, lc, oid, request ):
         '''Called every 24 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every1HourGlobally( self, lc, oid, request ):
         '''Called every hour once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every3HourGlobally( self, lc, oid, request ):
         '''Called every 3 hours once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every12HourGlobally( self, lc, oid, request ):
         '''Called every 12 hours once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every24HourGlobally( self, lc, oid, request ):
         '''Called every 24 hours once per service.
         '''
