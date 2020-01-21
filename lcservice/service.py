@@ -58,6 +58,10 @@ class Service( object ):
             'once_per_3h' : self.every3HourGlobally,
             'once_per_12h' : self.every12HourGlobally,
             'once_per_24h' : self.every24HourGlobally,
+            'new_sensor' : self.onNewSensor,
+            'sensor_per_24h' : self.every24HourPerSensor,
+            'sensor_per_7d' : self.every7DayPerSensor,
+            'sensor_per_30d' : self.every30DayPerSensor,
         }
 
         self.onStartup()
@@ -365,6 +369,30 @@ class Service( object ):
 
     @_unsupportedFunc
     def every24HourGlobally( self, lc, oid, request ):
+        '''Called every 24 hours once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def onNewSensor( self, lc, oid, request ):
+        '''Called every 24 hours once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every24HourPerSensor( self, lc, oid, request ):
+        '''Called every 24 hours once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every7DayPerSensor( self, lc, oid, request ):
+        '''Called every 24 hours once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every30DayPerSensor( self, lc, oid, request ):
         '''Called every 24 hours once per service.
         '''
         return self.responseNotImplemented()
