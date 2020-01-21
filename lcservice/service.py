@@ -32,6 +32,7 @@ class Service( object ):
         self._backgroundStopEvent = gevent.event.Event()
         self._nCallsInProgress = 0
         self._threads = gevent.pool.Group()
+        self._detectSubscribed = set()
 
         if self._originSecret is None:
             self.logCritical( 'Origin verification disabled, this should not be in production.' )
@@ -145,7 +146,17 @@ class Service( object ):
             'version' : PROTOCOL_VERSION,
             'start_time' : self._startedAt,
             'calls_in_progress' : nInProgress,
+            'mtd' : {
+                'detect_subscriptions' : tuple( self._detectSubscribed ),
+            },
         } )
+
+    def subscribeToDetect( self, detectName ):
+        '''Subscribe this service to the specific detection names of all subscribed orgs.
+
+        :param detectName: name of the detection to subscribe to.
+        '''
+        self._detectSubscribed.add( detectName )
 
     # Helper functions, feel free to override.
     def log( self, msg ):
