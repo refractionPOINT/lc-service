@@ -2,13 +2,14 @@ import lcservice
 import os
 import limacharlie
 import yaml
+import json
 
 class ExampleService( lcservice.Service ):
 
     def onStartup( self ):
         # This is a core set of rules we want to
         # ensure are always installed.
-        self.svcRules = '''
+        self.svcRules = yaml.safe_load( '''
             test-rule-1:
               detect:
                 op: contains
@@ -29,7 +30,11 @@ class ExampleService( lcservice.Service ):
               respond:
                 - action: report
                   name: detected-test-rule-2
-        '''
+        ''' )
+
+        # Make sure we get notifications from those.
+        self.subscribeToDetect( 'detected-test-rule-1' )
+        self.subscribeToDetect( 'detected-test-rule-2' )
 
     def onOrgInstalled( self, lc, oid, data ):
         print( 'Org %s just subscribed.' % ( oid, ) )
@@ -65,11 +70,27 @@ class ExampleService( lcservice.Service ):
         sync = limacharlie.Sync()
 
         rules = {
-            'rules' : yaml.safe_load( self.svcRules ),
+            'rules' : self.svcRules,
         }
 
         # Check that the rules are applied.
         sync.pushRules( rules )
+
+        return True
+
+    def onOrgUninstalled( self, lc, oid, data ):
+        self.log( "Goodbye %s" % ( oid, ) )
+
+        # Remove all out detections.
+        for ruleName in self.svcRules.keys():
+            lc.del_rule( ruleName )
+
+        return True
+
+    def onDetection( self, lc, oid, data ):
+        self.log( "Received a detection: %s" % ( json.dumps( data ), ) )
+
+        return True
 
 def main():
     # Bind to a potentially dynamic port for things like Google Cloud Run
