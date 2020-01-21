@@ -42,32 +42,10 @@ class ExampleService( lcservice.Service ):
         # First we apply our rules for the first time.
         self.every1HourPerOrg( lc, oid, request )
 
-        # We will be querying sensors in real-time so
-        # we will make this session interactive.
-        lc.make_interactive()
-
-        uniqueOperatingSystems = set()
-
-        for sensor in lc.sensors():
-            if not sensor.isOnline():
-                continue
-            response = sensor.simpleRequest( [ 'os_version' ], timeout = 10 )
-            if response is None:
-                # The sensor might have gone offline, move on.
-                continue
-            event = response[ 'event' ]
-            osKey = (
-                event.get( 'VERSION_MAJOR', None ),
-                event.get( 'VERSION_MINOR', None )
-            )
-            if osKey not in uniqueOperatingSystems:
-                uniqueOperatingSystems.add( osKey )
-                print( "Unique OS: %s / %s" % osKey )
-
         return True
 
     def every1HourPerOrg( self, lc, oid, request ):
-        sync = limacharlie.Sync()
+        sync = limacharlie.Sync( manager = lc )
 
         rules = {
             'rules' : self.svcRules,
