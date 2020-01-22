@@ -1,4 +1,5 @@
 import limacharlie
+from . import __version__ as lcservice_version
 import gevent
 from gevent.lock import BoundedSemaphore
 import gevent.pool
@@ -68,7 +69,7 @@ class Service( object ):
             'sensor_per_30d' : self.every30DayPerSensor,
         }
 
-        self.log( "Starting lc-service v%s" % ( lcservice.__version__ ) )
+        self.log( "Starting lc-service v%s" % ( lcservice_version ) )
 
         self.onStartup()
 
