@@ -21,6 +21,10 @@ class Request( object ):
         self.messageId = messageId
         self.data = data
 
+def _unsupportedFunc( method ):
+    method.is_not_supported = True
+    return method
+
 class Service( object ):
 
     # Boilerplate code
@@ -50,10 +54,18 @@ class Service( object ):
             'org_per_3h' : self.every3HourPerOrg,
             'org_per_12h' : self.every12HourPerOrg,
             'org_per_24h' : self.every24HourPerOrg,
+            'org_per_7d' : self.every7DayPerOrg,
+            'org_per_30d' : self.every30DayPerOrg,
             'once_per_1h' : self.every1HourGlobally,
             'once_per_3h' : self.every3HourGlobally,
             'once_per_12h' : self.every12HourGlobally,
             'once_per_24h' : self.every24HourGlobally,
+            'once_per_7d' : self.every7DayGlobally,
+            'once_per_30d' : self.every30DayGlobally,
+            'new_sensor' : self.onNewSensor,
+            'sensor_per_24h' : self.every24HourPerSensor,
+            'sensor_per_7d' : self.every7DayPerSensor,
+            'sensor_per_30d' : self.every30DayPerSensor,
         }
 
         self.onStartup()
@@ -142,12 +154,19 @@ class Service( object ):
     def _health( self, lc, oid, request ):
         with self._lock:
             nInProgress = self._nCallsInProgress
+        # List the callbacks that are implemented.
+        implementedCb = []
+        for cbName, method in self._handlers.items():
+            if hasattr( method, 'is_not_supported' ):
+                continue
+            implementedCb.append( cbName )
         return self.response( data = {
             'version' : PROTOCOL_VERSION,
             'start_time' : self._startedAt,
             'calls_in_progress' : nInProgress,
             'mtd' : {
                 'detect_subscriptions' : tuple( self._detectSubscribed ),
+                'callbacks' : implementedCb,
             },
         } )
 
@@ -244,6 +263,31 @@ class Service( object ):
         '''
         gevent.spawn_later( inDelay, self._managedThread, func, *args, **kw_args )
 
+    def parallelExec( self, f, objects, timeout = None, maxConcurrent = None ):
+        '''Applies a function to N objects in parallel in N threads and waits to return the list results.
+
+        :param f: the function to apply
+        :param objects: the collection of objects to apply using f
+        :param timeouts: number of seconds to wait for results, or None for indefinitely
+        :param maxConcurrent: maximum number of concurrent tasks
+        '''
+
+        g = gevent.pool.Pool( size = maxConcurrent )
+        results = g.imap_unordered( lambda o: _retExecOrExc( f, o, timeout ), tuple( objects ) )
+        return list( results )
+
+    def parallelExecEx( self, f, objects, timeout = None, maxConcurrent = None ):
+        '''Applies a function to N objects in parallel in N threads and waits to return the generated results.
+
+        :param f: the function to apply
+        :param objects: the dict of objects to apply using f
+        :param timeouts: number of seconds to wait for results, or None for indefinitely
+        :param maxConcurrent: maximum number of concurrent tasks
+        '''
+
+        g = gevent.pool.Pool( size = maxConcurrent )
+        return g.imap_unordered( lambda o: _retExecOrExcWithKey( f, o, timeout ), objects.items() )
+
     # LC Service Lifecycle Functions
     def onStartup( self ):
         '''Called when the service is first instantiated.
@@ -260,63 +304,145 @@ class Service( object ):
         '''
         self.log( "Shutting down." )
 
+    @_unsupportedFunc
     def onOrgInstalled( self, lc, oid, request ):
         '''Called when a new organization subscribes to this service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onOrgUninstalled( self, lc, oid, request ):
         '''Called when an organization unsubscribes from this service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onDetection( self, lc, oid, request ):
         '''Called when a detection is received for an organization.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def onRequest( self, lc, oid, request ):
         '''Called when a request is made for the service by the organization.
         '''
         return self.responseNotImplemented()
 
     # LC Service Cron-like Functions
+    @_unsupportedFunc
     def every1HourPerOrg( self, lc, oid, request ):
         '''Called every hour for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every3HourPerOrg( self, lc, oid, request ):
         '''Called every 3 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every12HourPerOrg( self, lc, oid, request ):
         '''Called every 12 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every24HourPerOrg( self, lc, oid, request ):
         '''Called every 24 hours for every organization subscribed.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
+    def every7DayPerOrg( self, lc, oid, request ):
+        '''Called every 7 days for every organization subscribed.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every30DayPerOrg( self, lc, oid, request ):
+        '''Called every 30 days for every organization subscribed.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
     def every1HourGlobally( self, lc, oid, request ):
         '''Called every hour once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every3HourGlobally( self, lc, oid, request ):
         '''Called every 3 hours once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every12HourGlobally( self, lc, oid, request ):
         '''Called every 12 hours once per service.
         '''
         return self.responseNotImplemented()
 
+    @_unsupportedFunc
     def every24HourGlobally( self, lc, oid, request ):
         '''Called every 24 hours once per service.
         '''
         return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every7DayGlobally( self, lc, oid, request ):
+        '''Called every 7 days once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every30DayGlobally( self, lc, oid, request ):
+        '''Called every 30 days once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def onNewSensor( self, lc, oid, request ):
+        '''Called every 24 hours once per service.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every24HourPerSensor( self, lc, oid, request ):
+        '''Called every 24 hours once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every7DayPerSensor( self, lc, oid, request ):
+        '''Called every 7 days once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every30DayPerSensor( self, lc, oid, request ):
+        '''Called every 30 days once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+# Simple wrappers to enable clean parallel executions.
+def _retExecOrExc( f, o, timeout ):
+    try:
+        if timeout is None:
+            return f( o )
+        else:
+            with gevent.Timeout( timeout ):
+                return f( o )
+    except ( Exception, gevent.Timeout ) as e:
+        return e
+
+def _retExecOrExcWithKey( f, o, timeout ):
+    k, o = o
+    try:
+        if timeout is None:
+            return ( k, f( o ) )
+        else:
+            with gevent.Timeout( timeout ):
+                return ( k, f( o ) )
+    except ( Exception, gevent.Timeout ) as e:
+        return ( k, e )
