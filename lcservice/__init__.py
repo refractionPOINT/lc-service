@@ -1,6 +1,6 @@
 """Reference implementation for LimaCharlie.io services."""
 
-__version__ = "1.0.2"
+__version__ = "1.0.6"
 __author__ = "Maxime Lamothe-Brassard ( Refraction Point, Inc )"
 __author_email__ = "maxime@refractionpoint.com"
 __license__ = "Apache v2"

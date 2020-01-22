@@ -68,6 +68,8 @@ class Service( object ):
             'sensor_per_30d' : self.every30DayPerSensor,
         }
 
+        self.log( "Starting lc-service v%s" % ( lcservice.__version__ ) )
+
         self.onStartup()
 
     def _verifyOrigin( self, data, signature ):
