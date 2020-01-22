@@ -73,20 +73,40 @@ class ExampleService( lcservice.Service ):
     def every24HourPerSensor( self, lc, oid, request ):
         sid = request.data[ 'sid' ]
 
+        # Start by checking if the sensor is online. If it is not we can
+        # leave now, report a failure without retry and try again tomorrow.
+        sensor = lc.sensor( sid )
+        if not sensor.isOnline():
+            return False
+
         # We will query the sensor live.
         lc.make_interactive()
 
         try:
             # Let's list the pakages installed on this box.
-            response = lc.sensor( sid ).simpleRequest( [ 'os_packages' ] )
-            if response is None:
-                return False
-            packages = response[ 'event' ].get( 'PACKAGES', [] )
-            self.log( "Sensor %s has %s packages installed." % ( sid, len( packages ) ) )
+            response = sensor.simpleRequest( [ 'os_packages' ] )
         finally:
             # Being interactive with a sensor takes some resources, so we
             # will shutdown cleanly as soon as we can.
             lc.shutdown()
+
+        # If there was no response, the sensor may have gone offline so
+        # we will report a failure without retries, we'll try again tomorrow.
+        if response is None:
+            return False
+
+        # Get the list of packages from the response.
+        packages = response[ 'event' ].get( 'PACKAGES', [] )
+
+        self.log( "Sensor %s (OID %s) has %s packages installed." % ( sid, oid, len( packages ) ) )
+
+        return True
+
+    def onNewSensor( self, lc, oid, request ):
+        sid = request.data[ 'sid' ]
+        hostname = request.data.get( 'hostname', None )
+        self.log( "New sensor enrolled (OID %s): %s :: %s" % ( oid, sid, hostname ) )
+        return True
 
 def main():
     # Bind to a potentially dynamic port for things like Google Cloud Run
