@@ -44,6 +44,18 @@ class ExampleService( lcservice.Service ):
 
         return True
 
+    def onOrgUninstalled( self, lc, oid, request ):
+        self.log( "Goodbye %s" % ( oid, ) )
+
+        # Remove all out detections.
+        for ruleName in self.svcRules.keys():
+            try:
+                lc.del_rule( ruleName )
+            except Exception as e:
+                self.logCritical( "Failure deleting rule %s on %s: %s" % ( ruleName, oid, e ) )
+
+        return True
+
     def every1HourPerOrg( self, lc, oid, request ):
         sync = limacharlie.Sync( manager = lc )
 
@@ -53,15 +65,6 @@ class ExampleService( lcservice.Service ):
 
         # Check that the rules are applied.
         sync.pushRules( rules )
-
-        return True
-
-    def onOrgUninstalled( self, lc, oid, request ):
-        self.log( "Goodbye %s" % ( oid, ) )
-
-        # Remove all out detections.
-        for ruleName in self.svcRules.keys():
-            lc.del_rule( ruleName )
 
         return True
 
