@@ -178,22 +178,34 @@ class Service( object ):
         self._detectSubscribed.add( detectName )
 
     # Helper functions, feel free to override.
-    def log( self, msg ):
+    def log( self, msg, data = None ):
         with self._lock:
-            sys.stdout.write( json.dumps( {
-                'time' : time.time(),
-                'msg' : msg
-            } ) )
-            sys.stdout.write( "\n" )
+            ts = time.time()
+            entry = {
+                'service' : self._serviceName,
+                'timestamp' : {
+                    'seconds' : int( ts ),
+                    'nanos' : int( ( ts % 1 ) * 1000000000 )
+                }
+            }
+            if msg is not None:
+                entry[ 'message' ] = msg
+            if data is not None:
+                entry.update( data )
+            print( json.dumps( entry ) )
             sys.stdout.flush()
 
     def logCritical( self, msg ):
         with self._lock:
-            sys.stderr.write( json.dumps( {
-                'time' : time.time(),
-                'msg' : msg
+            ts = time.time()
+            err_print( json.dumps( {
+                'message' : msg,
+                'actor' : self._serviceName,
+                'timestamp' : {
+                    'seconds' : int( ts ),
+                    'nanos' : int( ( ts % 1 ) * 1000000000 )
+                }
             } ) )
-            sys.stderr.write( "\n" )
             sys.stderr.flush()
 
     # Helper functions.
