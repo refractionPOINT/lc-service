@@ -204,7 +204,7 @@ class Service( object ):
     def logCritical( self, msg ):
         with self._lock:
             ts = time.time()
-            err_print( json.dumps( {
+            sys.stderr.write( json.dumps( {
                 'message' : msg,
                 'actor' : self._serviceName,
                 'timestamp' : {
@@ -212,6 +212,7 @@ class Service( object ):
                     'nanos' : int( ( ts % 1 ) * 1000000000 )
                 }
             } ) )
+            sys.stderr.write( "\n" )
             sys.stderr.flush()
 
     # Helper functions.
