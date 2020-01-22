@@ -116,6 +116,9 @@ class Service( object ):
             elif resp is False:
                 # Shortcut for simple failure no retry.
                 resp = self.response( isSuccess = False, isDoRetry = False )
+            elif resp is None:
+                # Shortcut for simple failure with retry.
+                resp = self.response( isSuccess = False, isDoRetry = True )
             elif not isinstance( resp, dict ):
                 self.logCritical( 'no valid response specified in %s, assuming success' % ( eType, ) )
                 resp = self.response( isSuccess = True,
