@@ -70,6 +70,24 @@ class ExampleService( lcservice.Service ):
 
         return True
 
+    def every24HourPerSensor( self, lc, oid, request ):
+        sid = request.data[ 'sid' ]
+
+        # We will query the sensor live.
+        lc.make_interactive()
+
+        try:
+            # Let's list the pakages installed on this box.
+            response = lc.sensor( sid ).simpleRequest( [ 'os_packages' ] )
+            if response is None:
+                return False
+            packages = response[ 'event' ].get( 'PACKAGES', [] )
+            self.log( "Sensor %s has %s packages installed." % ( sid, len( packages ) ) )
+        finally:
+            # Being interactive with a sensor takes some resources, so we
+            # will shutdown cleanly as soon as we can.
+            lc.shutdown()
+
 def main():
     # Bind to a potentially dynamic port for things like Google Cloud Run
     # or other clusters.
