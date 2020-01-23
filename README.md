@@ -92,6 +92,34 @@ FROM refractionpoint/lc-service:latest
 
 See our example service [here](examples/).
 
+## Examples
+
+Some ready to deploy examples can be found [here](examples/).
+
+### List Packages For New Sensors
+
+```python
+class MyService( lcservice.Service ):
+    def onNewSensor( self, lc, oid, request ):
+        sensorId = request.data[ 'sid' ]
+
+        sensor = lc.sensor( sensorId )
+
+        if not sensor.isOnline():
+            # It must have disconnected already.
+            return False
+
+        # We will interact in real-time with the host.
+        lc.make_interactive()
+
+        response = sensor.simpleRequest( [ 'os_packages' ] )
+        if response is None:
+            # It might have disconnected.
+            return False
+
+        self.log( "New sensor %s has packages: %s" % ( sensorId, response[ 'event' ] ) )
+```
+
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
 from LimaCharlie, making passive deployments through AWS Lambda, GCP
