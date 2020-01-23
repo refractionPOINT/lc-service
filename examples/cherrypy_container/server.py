@@ -119,7 +119,9 @@ def main():
 
     # Create an instance of our service with our service name and the
     # shared secret with LimaCharlie to verify the origin of the data.
-    svc = ExampleService( 'example-service', 'my-secret' )
+    svc = ExampleService( 'example-service',
+                          'my-secret',
+                          isTraceComms = os.environ.get( 'DO_TRACE', False ) )
 
     # Start serving it using CherryPy as an HTTP server.
     lcservice.servers.ServeCherryPy( svc, interface = '0.0.0.0', port = port )

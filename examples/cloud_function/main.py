@@ -114,7 +114,9 @@ class ExampleService( lcservice.Service ):
 # shared secret with LimaCharlie to verify the origin of the data.
 # We create this instance in the global scope so that some caching
 # can happen, whenever possible.
-exampleService = ExampleService( 'example-service', 'my-secret' )
+exampleService = ExampleService( 'example-service',
+                                 'my-secret',
+                                 isTraceComms = os.environ.get( 'DO_TRACE', False ) )
 
 # This is the Cloud Function entry point. Make sure to set the
 # entry point to "service_main" on creation.
