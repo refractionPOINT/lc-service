@@ -16,9 +16,81 @@ the CherryPy project for an HTTP server, and a Google Cloud Function compatible
 server to deploy without containers or infrastructure. Writing transports is easy
 so feel free to suggest new ones.
 
+***Cloud Function Transport*** is currently having an issue with the initialization
+and monkey patching of gevent in the Cloud Function environment.
+
 ## Using
 
+The RI is structure so that all you have to do is inherit from the main Service class:
+
+```python
+class MyService (lcservice.Service ):
+```
+
+and implement one or more callback functions:
+
+* `onStartup`: called once when an instance of the service starts.
+* `onShutdown`: called once when an instance of the service stops.
+* `onOrgInstalled`: an organization installs your service.
+* `onOrgUninstalled`: an organization uninstalls your service.
+* `onDetection`: a detection your service subscribes to occured.
+* `onRequest`: an ad-hoc request for your service is received.
+* `onNewSensor`: a new sensor has enrolled in an organization your service is installed.
+
+as well as any number of callbacks from a series of cron-like functions provided
+with various granularity (global, per organization or per sensor).
+
+* `every1HourPerOrg`
+* `every3HourPerOrg`
+* `every12HourPerOrg`
+* `every24HourPerOrg`
+* `every7DayPerOrg`
+* `every30DayPerOrg`
+* `every1HourGlobally`
+* `every3HourGlobally`
+* `every12HourGlobally`
+* `every24HourGlobally`
+* `every7DayGlobally`
+* `every30DayGlobally`
+* `every24HourPerSensor`
+* `every7DayPerSensor`
+* `every30DayPerSensor`
+
+All the callbacks receive the same arguments `( lc, oid, request )`:
+
+* `lc`: an instance of the [LimaCharlie SDK](https://github.com/refractionPOINT/python-limacharlie/) pre-authenticated for the relevant organization.
+* `oid` the Organization ID of the relevant organization.
+* `request`: a `lcservice.service.Request` object containing a `eventType`, `messageId` and `data` properties.
+
+Each callback returns one of 4 values:
+
+* `True`: indicates the callback was successful.
+* `False`: indicates the callback was not successful, but the request should NOT be retried.
+* `None`: indicaes the callback was not successful, but the request SHOULD be retried.
+* `self.response( isSuccess = True, isDoRetry = False, data = {} )`: to customize the behavior requested of the LimaCharlie platform.
+
+Many helper functions are also provided for your convenience like:
+
+* `log()`
+* `logCritical()`
+* `delay()` and `schedule()`
+* `parallelExec()`
+
 ## Deploying
+
+Deploying is slightly different depending on the transport chose.
+
+For the CherryPy container based transport, deployment is as simple as running
+the container. For the sake of handling less infrastructure we recommend Using
+something like [Google Cloud Run](https://cloud.google.com/run/docs/).
+
+A pre-built base image container is available [here](https://hub.docker.com/r/refractionpoint/lc-service):
+
+```
+FROM refractionpoint/lc-service:latest
+```
+
+See our example service [here](examples/).
 
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
