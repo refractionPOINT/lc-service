@@ -29,7 +29,12 @@ def _unsupportedFunc( method ):
 class Service( object ):
 
     # Boilerplate code
-    def __init__( self, serviceName, originSecret ):
+    def __init__( self, serviceName, originSecret, isTraceComms = False ):
+        '''Create a new Service.
+        :param serviceName: name identifying this service.
+        :param originSecret: shared secret with LimaCharlie to validate origin of requests.
+        :param isTraceComms: if True, log all requests and responses (jwt omitted).
+        '''
         self._serviceName = serviceName
         self._originSecret = originSecret
         self._startedAt = int( time.time() )
@@ -38,6 +43,7 @@ class Service( object ):
         self._nCallsInProgress = 0
         self._threads = gevent.pool.Group()
         self._detectSubscribed = set()
+        self._isTraceComms = isTraceComms
 
         if self._originSecret is None:
             self.logCritical( 'Origin verification disabled, this should not be in production.' )
@@ -98,6 +104,11 @@ class Service( object ):
                                   isDoRetry = False,
                                   data = { 'error' : 'unsupported version (> %s)' % ( PROTOCOL_VERSION, ) } )
 
+        if self._isTraceComms:
+            dataNoJwt = data.copy()
+            dataNoJwt.pop( 'jwt', None )
+            self.log( "REQ (%s): %s" % ( msgId, json.dumps( dataNoJwt ) ) )
+
         request = Request( eType, msgId, data )
 
         handler = self._handlers.get( eType, None )
@@ -127,6 +138,10 @@ class Service( object ):
                 resp = self.response( isSuccess = True,
                                       isDoRetry = False,
                                       data = {} )
+
+            if self._isTraceComms:
+                self.log( "REP (%s): %s" % ( msgId, json.dumps( resp ) ) )
+
             return resp
         except:
             exc = traceback.format_exc()
@@ -142,6 +157,12 @@ class Service( object ):
                 self.logCritical( 'event %s over deadline by %ss' % ( eType, now - deadline ) )
 
     def response( self, isSuccess = True, isDoRetry = False, data = {} ):
+        '''Generate a custom response JSON message.
+
+        :param isSuccess: True for success, False for failure.
+        :param isDoRetry: if True indicates to LimaCharlie to retry the request.
+        :param data: JSON data to include in the response.
+        '''
         ret = {
             'success' : isSuccess,
             'data' : data,
@@ -153,6 +174,8 @@ class Service( object ):
         return ret
 
     def responseNotImplemented( self ):
+        '''Generate a pre-made response indicating the callback is not implemented.
+        '''
         return self.response( isSuccess = False,
                               isDoRetry = False,
                               data = { 'error' : 'not implemented' } )
@@ -185,6 +208,11 @@ class Service( object ):
 
     # Helper functions, feel free to override.
     def log( self, msg, data = None ):
+        '''Log a message to stdout.
+
+        :param msg: message to log.
+        :param data: optional JSON data to include in log.
+        '''
         with self._lock:
             ts = time.time()
             entry = {
@@ -202,6 +230,10 @@ class Service( object ):
             sys.stdout.flush()
 
     def logCritical( self, msg ):
+        '''Log a message to stderr.
+
+        :param msg: critical message to log.
+        '''
         with self._lock:
             ts = time.time()
             sys.stderr.write( json.dumps( {
@@ -283,12 +315,14 @@ class Service( object ):
         gevent.spawn_later( inDelay, self._managedThread, func, *args, **kw_args )
 
     def parallelExec( self, f, objects, timeout = None, maxConcurrent = None ):
-        '''Applies a function to N objects in parallel in N threads and waits to return the list results.
+        '''Applies a function to N objects in parallel in up to maxConcurrent threads and waits to return the list results.
 
         :param f: the function to apply
         :param objects: the collection of objects to apply using f
         :param timeouts: number of seconds to wait for results, or None for indefinitely
         :param maxConcurrent: maximum number of concurrent tasks
+
+        :returns: a list of return values from f(object), or Exception if one occured.
         '''
 
         g = gevent.pool.Pool( size = maxConcurrent )
@@ -296,12 +330,14 @@ class Service( object ):
         return list( results )
 
     def parallelExecEx( self, f, objects, timeout = None, maxConcurrent = None ):
-        '''Applies a function to N objects in parallel in N threads and waits to return the generated results.
+        '''Applies a function to N objects in parallel in up to maxConcurrent threads and waits to return the generated results.
 
         :param f: the function to apply
-        :param objects: the dict of objects to apply using f
+        :param objects: a dict of key names pointing to the objects to apply using f
         :param timeouts: number of seconds to wait for results, or None for indefinitely
         :param maxConcurrent: maximum number of concurrent tasks
+
+        :returns: a generator of tuples( key name, f(object) ), or Exception if one occured.
         '''
 
         g = gevent.pool.Pool( size = maxConcurrent )

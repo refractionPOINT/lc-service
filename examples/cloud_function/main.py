@@ -1,5 +1,4 @@
 import lcservice
-import os
 import limacharlie
 import yaml
 import json
@@ -111,22 +110,16 @@ class ExampleService( lcservice.Service ):
         self.log( "New sensor enrolled (OID %s): %s :: %s" % ( oid, sid, hostname ) )
         return True
 
-def main():
-    # Bind to a potentially dynamic port for things like Google Cloud Run
-    # or other clusters.
-    port = int( os.environ.get( 'PORT', '80' ) )
-    print( 'Starting on port %s' % ( port, ) )
+# Create an instance of our service with our service name and the
+# shared secret with LimaCharlie to verify the origin of the data.
+# We create this instance in the global scope so that some caching
+# can happen, whenever possible.
+exampleService = ExampleService( 'example-service',
+                                 'my-secret',
+                                 isTraceComms = os.environ.get( 'DO_TRACE', False ) )
 
-    # Create an instance of our service with our service name and the
-    # shared secret with LimaCharlie to verify the origin of the data.
-    svc = ExampleService( 'example-service',
-                          'my-secret',
-                          isTraceComms = os.environ.get( 'DO_TRACE', False ) )
-
-    # Start serving it using CherryPy as an HTTP server.
-    lcservice.servers.ServeCherryPy( svc, interface = '0.0.0.0', port = port )
-
-    print( 'Shut down' )
-
-if __name__ == '__main__':
-    main()
+# This is the Cloud Function entry point. Make sure to set the
+# entry point to "service_main" on creation.
+def service_main( request ):
+    # Start serving it using a request object.
+    return lcservice.servers.ServeCloudFunction( exampleService, request )
