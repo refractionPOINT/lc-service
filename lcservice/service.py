@@ -27,6 +27,7 @@ def _unsupportedFunc( method ):
     return method
 
 class Service( object ):
+    '''Main class implementing core service functionality.'''
 
     # Boilerplate code
     def __init__( self, serviceName, originSecret, isTraceComms = False ):

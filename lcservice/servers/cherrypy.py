@@ -2,6 +2,8 @@ import cherrypy
 import functools
 
 def ServeCherryPy( service, interface = '0.0.0.0', port = 80, options = {} ):
+    '''Serve a service using the cherrypy web server.'''
+
     serverConfig = {
         'global' : {
             'engine.autoreload.on' : False,

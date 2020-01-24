@@ -2,6 +2,8 @@ import flask
 import json
 
 def ServeCloudFunction( service, request ):
+    '''Serve a service using a google cloud function.'''
+
     # Make sure we only handle JSON.
     requestData = request.get_json()
     if requestData is None:
