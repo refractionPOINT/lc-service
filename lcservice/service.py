@@ -12,6 +12,7 @@ import sys
 import json
 import traceback
 import uuid
+import base64
 
 PROTOCOL_VERSION = 1
 
@@ -44,6 +45,7 @@ class Service( object ):
         self._nCallsInProgress = 0
         self._threads = gevent.pool.Group()
         self._detectSubscribed = set()
+        self._internalResources = {}
         self._isTraceComms = isTraceComms
 
         if self._originSecret is None:
@@ -58,6 +60,7 @@ class Service( object ):
             'org_uninstall' : self.onOrgUninstalled,
             'detection' : self.onDetection,
             'request' : self.onRequest,
+            'get_resource' : self._onResourceAccess,
             'org_per_1h' : self.every1HourPerOrg,
             'org_per_3h' : self.every3HourPerOrg,
             'org_per_12h' : self.every12HourPerOrg,
@@ -200,12 +203,45 @@ class Service( object ):
             },
         } )
 
+    def _onResourceAccess( self, lc, oid, request ):
+        resName = request.data[ 'resource' ]
+        isWithData = request.data[ 'is_include_data' ]
+        resInfo = self._internalResources.get( resName, None )
+        if resInfo is None:
+            return self.response( isSuccess = False, isRetry = False, data = {
+                'error' : 'resource not available',
+            })
+        ret = {
+            'hash' : resInfo[ 0 ],
+            'res_cat' : resInfo[ 1 ],
+        }
+        if isWithData:
+            ret[ 'res_data' ] = resInfo[ 2 ]
+        return self.response( isSuccess = True, data = ret )
+
     def subscribeToDetect( self, detectName ):
         '''Subscribe this service to the specific detection names of all subscribed orgs.
 
         :param detectName: name of the detection to subscribe to.
         '''
         self._detectSubscribed.add( detectName )
+
+    def publishResource( self, resourceName, resourceCategory, resourceData ):
+        '''Make a resource with this name available to LimaCharlie requests.
+
+        :param resourceName: the name of the resource to make available.
+        :param resourceCategory: the category of the resource (like "detect" or "lookup").
+        :param resourceData: the resource content.
+        '''
+        # Some times LimaCharlie requests a hash of resources to determine
+        # if the resource has changed and needs to be fetched again.
+        resHash = hashlib.sha256( resourceData ).hexdigest()
+        resourceData = base64.b64encode( resourceData ).decode()
+        self._internalResources[ resourceName ] = (
+            resHash,
+            resourceCategory,
+            resourceData
+        )
 
     # Helper functions, feel free to override.
     def log( self, msg, data = None ):

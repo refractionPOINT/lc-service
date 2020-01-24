@@ -2,6 +2,7 @@ import lcservice
 import limacharlie
 import yaml
 import json
+import os
 
 class ExampleService( lcservice.Service ):
 
