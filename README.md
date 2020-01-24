@@ -10,6 +10,8 @@ That being said, to simplify the life of users and to describe more concretely
 the expectation of a working service, LimaCharlie publishes an open source
 Reference Implementation (RI) in Python.
 
+API Documentation: https://lc-service.readthedocs.io/
+
 ## Transports
 The RI supports two transports out of the box: standalone container based on
 the CherryPy project for an HTTP server, and a Google Cloud Function compatible
@@ -24,7 +26,7 @@ and monkey patching of gevent in the Cloud Function environment.
 The RI is structure so that all you have to do is inherit from the main Service class:
 
 ```python
-class MyService (lcservice.Service ):
+class MyService ( lcservice.Service ):
 ```
 
 and implement one or more callback functions:
@@ -68,6 +70,12 @@ Each callback returns one of 4 values:
 * `False`: indicates the callback was not successful, but the request should NOT be retried.
 * `None`: indicaes the callback was not successful, but the request SHOULD be retried.
 * `self.response( isSuccess = True, isDoRetry = False, data = {} )`: to customize the behavior requested of the LimaCharlie platform.
+
+In addition to the main lifecycle callbacks, some functions are available to simplify
+some management tasks for your service.
+
+* `subscribeToDetect( detectName )`: allows you specify the names of detections you would like to receive notifications from in the `onDetection` callback.
+* `publishResource( resourName, resourceCategory, resourceData )`: allows you to make available to LimaCharlie resources private to your service, like a `lookop` for example. You can refer to them as `lcr://service/<serviceName>/<resourceName>`.
 
 Many helper functions are also provided for your convenience like:
 
@@ -183,6 +191,19 @@ Called when a detection this service subscribes to (see `detect_subscriptions`) 
 ### request
 Will support interactive requests by users within the organization for ad-hoc functionality
 of your service like running jobs on specific hosts etc. Not yet implemented.
+
+### get_resource
+Called when a resource that is internal to the service is requested by LimaCharlie.
+The data in the request includes:
+
+* `resource`: the name of the resource requested.
+* `is_include_data`: if true, the actual resource content is requested, otherwise only the hash.
+
+The expected response by LimaCharlie has the following data elements:
+
+* `hash`: the sha256 of the content of the resource, used to determine if LimaCharlie needs to refresh it.
+* `res_cat`: the resource category (like `lookup` or `detect`) of the resource returned.
+* `res_data`: if the data was requested, this is the `base64(data)`.
 
 ### org_per_*
 Convenience cron-like event. The LimaCharlie cloud emits those events at recurring
