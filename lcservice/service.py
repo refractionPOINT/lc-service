@@ -257,7 +257,8 @@ class Service( object ):
                 'timestamp' : {
                     'seconds' : int( ts ),
                     'nanos' : int( ( ts % 1 ) * 1000000000 )
-                }
+                },
+                'severity' : 'INFO',
             }
             if msg is not None:
                 entry[ 'message' ] = msg
@@ -279,7 +280,8 @@ class Service( object ):
                 'timestamp' : {
                     'seconds' : int( ts ),
                     'nanos' : int( ( ts % 1 ) * 1000000000 )
-                }
+                },
+                'severity' : 'ERROR',
             } ) )
             sys.stderr.write( "\n" )
             sys.stderr.flush()

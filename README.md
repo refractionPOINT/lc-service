@@ -128,6 +128,23 @@ class MyService( lcservice.Service ):
         self.log( "New sensor %s has packages: %s" % ( sensorId, response[ 'event' ] ) )
 ```
 
+## Best Practices
+
+### Resource Usage
+If your service creates [D&R rules](http://doc.limacharlie.io/en/master/dr/), it is
+recommended that those rules not rely on other external resource (like `lcr://lookup/something`)
+because organizations who install your service may not be subscribed to those resources
+which in turn will mean your rules will fail.
+
+There are two solutions to this problem:
+
+1. Have your service request the `billing.ctrl` permission and then have the service
+register the organization to this external resource.
+1. (Recommended) Make the resource an internal to the service (using `publishResource` as mentioned above)
+and make your rules use the internal resource (which do NOT require organization detect_subscription)
+like `lcr://service/<your-service-name>/<your-internal-resource-name>`. This way your
+service is self-contained and does not require external resources.
+
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
 from LimaCharlie, making passive deployments through AWS Lambda, GCP
