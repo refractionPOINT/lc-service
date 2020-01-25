@@ -6,8 +6,8 @@ __author_email__ = "maxime@refractionpoint.com"
 __license__ = "Apache v2"
 __copyright__ = "Copyright (c) 2018 Refraction Point, Inc"
 
-from .service import Service
-from . import servers
+from .service import Service  # noqa: F401
+from . import servers         # noqa: F401
 
 def enableGRPC():
     '''Helper function to call to enable safe use of gRPC given the use of gevent
