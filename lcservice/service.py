@@ -61,6 +61,8 @@ class Service( object ):
             'detection' : self.onDetection,
             'request' : self.onRequest,
             'get_resource' : self._onResourceAccess,
+            'deployment_event' : self.onDeploymentEvent,
+            'log_event' : self.onLogEvent,
             'org_per_1h' : self.every1HourPerOrg,
             'org_per_3h' : self.every3HourPerOrg,
             'org_per_12h' : self.every12HourPerOrg,
@@ -419,6 +421,18 @@ class Service( object ):
     @_unsupportedFunc
     def onRequest( self, lc, oid, request ):
         '''Called when a request is made for the service by the organization.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def onDeploymentEvent( self, lc, oid, request ):
+        '''Called when a deployment event is received.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def onLogEvent( self, lc, oid, request ):
+        '''Called when a log event is received.
         '''
         return self.responseNotImplemented()
 
