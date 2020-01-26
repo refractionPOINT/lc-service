@@ -18,7 +18,7 @@ def test_create_service():
     assert( 'version' in data )
     assert( 'start_time' in data )
     assert( 0 == len( data[ 'mtd' ][ 'detect_subscriptions' ] ) )
-    assert( 1 == len( data[ 'mtd' ][ 'callbacks' ] ) )
+    assert( 2 == len( data[ 'mtd' ][ 'callbacks' ] ) )
 
 def test_callback_enabled():
     class _Svc( lcservice.Service ):
@@ -39,7 +39,7 @@ def test_callback_enabled():
     assert( 'version' in data )
     assert( 'start_time' in data )
     assert( 0 == len( data[ 'mtd' ][ 'detect_subscriptions' ] ) )
-    assert( 2 == len( data[ 'mtd' ][ 'callbacks' ] ) )
+    assert( 3 == len( data[ 'mtd' ][ 'callbacks' ] ) )
 
     resp = svc._processEvent( {
         'etype' : 'org_install',
