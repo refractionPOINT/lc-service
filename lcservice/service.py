@@ -81,7 +81,7 @@ class Service( object ):
             'sensor_per_30d' : self.every30DayPerSensor,
         }
 
-        self.log( "Starting lc-service v%s" % ( lcservice_version ) )
+        self.log( "Starting lc-service v%s (SDK v%s)" % ( lcservice_version, limacharlie.__version__ ) )
 
         self.onStartup()
 
