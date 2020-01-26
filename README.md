@@ -37,7 +37,8 @@ and implement one or more callback functions:
 * `onOrgUninstalled`: an organization uninstalls your service.
 * `onDetection`: a detection your service subscribes to occured.
 * `onRequest`: an ad-hoc request for your service is received.
-* `onNewSensor`: a new sensor has enrolled in an organization your service is installed.
+* `onDeploymentEvent`: a deployment event (like sensor enrollment, over-quota, etc) is received from the cloud.
+* `onLogEvent`: a new log has been ingested in the LimaCharlie cloud.
 
 as well as any number of callbacks from a series of cron-like functions provided
 with various granularity (global, per organization or per sensor).
@@ -108,8 +109,12 @@ Some ready to deploy examples can be found [here](examples/).
 
 ```python
 class MyService( lcservice.Service ):
-    def onNewSensor( self, lc, oid, request ):
-        sensorId = request.data[ 'sid' ]
+    def onDeploymentEvent( self, lc, oid, request ):
+        # We only care about enrollments of new sensors.
+        if 'enrollment' != request.data[ 'routing' ]:
+            return True
+
+        sensorId = request.data[ 'routing' ][ 'sid' ]
 
         sensor = lc.sensor( sensorId )
 
@@ -258,7 +263,11 @@ setup cron jobs.
 * `sensor_per_7d`
 * `sensor_per_30d`
 
-### new_sensor
-Called when a sensor enrolls in an organization with the service installed.
-The `data` component will contain basic information on the new sensor like
-a `sid`, `hostname`, `ext_ip` and `int_ip` as well as platform and architecture.
+### deployment_event
+Called when a deployment event occurs in an organization with the service installed.
+The `data` component will contain a `routing` and `event` component similarly to the
+deployment events in a LimaCharlie [Output](https://doc.limacharlie.io/en/master/outputs/).
+
+### log_event
+Called when a log has been ingested in LimaCharlie. The `data` component will contain a `routing` and `event` component similarly to the
+deployment events in a LimaCharlie [Output](https://doc.limacharlie.io/en/master/outputs/).
