@@ -1,4 +1,7 @@
-# lc-service
+# LimaCharlie.io Services
+
+![LimaCharlie.io](https://storage.googleapis.com/limacharlie-io/logo_fast_glitch.gif)
+
 Reference implementation of the LimaCharlie Service protocol.
 
 # Reference Implementation
