@@ -178,7 +178,7 @@ A response from the service, also JSON is expected to have the following format:
 * `retry`: if `success` was `false`, should LimaCharlie attempt to re-deliver this message.
 * `data`: arbitrary JSON, content based on the `etype` in the request.
 
-Most requests will have a deadline of +60s in the future. This may mean that longer
+Most requests will have a deadline of +590s in the future. This may mean that longer
 operations will not fit in that deadline. You should either delay execution, parallelize
 or split up the execution in more granular `etype` events like per-sensor events.
 
