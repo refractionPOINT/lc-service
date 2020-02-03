@@ -113,7 +113,7 @@ class Service( object ):
         if self._isTraceComms:
             dataNoJwt = data.copy()
             dataNoJwt.pop( 'jwt', None )
-            self.log( "REQ (%s): %s" % ( msgId, json.dumps( dataNoJwt ) ) )
+            self.log( "REQ (%s): %s => %s" % ( msgId, eType, json.dumps( dataNoJwt ) ) )
 
         request = Request( eType, msgId, data )
 

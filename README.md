@@ -153,6 +153,53 @@ and make your rules use the internal resource (which do NOT require organization
 like `lcr://service/<your-service-name>/<your-internal-resource-name>`. This way your
 service is self-contained and does not require external resources.
 
+### Permissions Usage
+When creating a service record in LimaCharlie, you will have a choice of which
+permissions the service requests to begin operation. Although you can enable
+all permissions, it's generally not advised as it grants a wide number of critical
+permissions.
+
+There are no limits on which permissions you request for private services. However
+if you intend to add your service publicly through the marketplace (and monetize it)
+the LimaCharlie team is likely going to request to revisit with you your usage of
+any permissions that are more sensitive (like `user.ctrl` for example).
+
+In addition to permissions, you may also chose various pieces of [Flair](https://doc.limacharlie.io/en/master/api_keys/#flair)
+your service requests to apply to its API usage. Although again here you have full
+control, we generally recommend you enable the following:
+
+* `lock`: this ensures that resources your service creates don't get overwritten by other services or users.
+* `secret`: this ensures that the content of the resources your service creates are not visible to others. It's not as critical but if you intend to install proprietary [Detection & Response rules](https://doc.limacharlie.io/en/master/dr/) you likely want it.
+* `segment`: this ensures that your services does not see any resources it has not created itself. This helps ensure your service doesn't delete other services' resources as well as maintain general privacy.
+
+## Tips
+The following are general tips to know when developing new services.
+
+### Start on Simulator
+You can use the Simulator like: `python -m lcservice.simulator` before trying
+to standup your service live with LimaCharlie. This makes it faster to test
+some of the functionality. By setting the shared secret of your service to `None`
+the origination of requests is not checked so you can use a simple `curl` as well.
+
+### Adding Live Service
+When adding a new service to LimaCharlie, it may take up to ~5 minutes for it
+to become available on all LimaCharlie data-centers. Trying to subscribe to
+it before it's available may result in odd behavior. If you encounter those, simply
+un-register and re-register your Organization.
+
+### Permissions Changes
+If you change the permissions for a service after it has been deployed and used by
+an organization, the new permissions do NOT propagate to existing organizations. To
+force the new permissions to take effect, un-register and re-register the organizations.
+Also note that because JWTs may be cached within LimaCharlie, it's possible for your new
+permissions to not be in effect for up to an hour. This means you should take care at
+figuring out the permissions you require ahead of time.
+
+### Detection Subscription Changes
+A service may register to receive some detections from LimaCharlie. That list of
+detection of interest is updated at recurring interval in LimaCharlie and may take
+up to 5 minutes to update.
+
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
 from LimaCharlie, making passive deployments through AWS Lambda, GCP
@@ -178,7 +225,7 @@ A response from the service, also JSON is expected to have the following format:
 * `retry`: if `success` was `false`, should LimaCharlie attempt to re-deliver this message.
 * `data`: arbitrary JSON, content based on the `etype` in the request.
 
-Most requests will have a deadline of +60s in the future. This may mean that longer
+Most requests will have a deadline of +590s in the future. This may mean that longer
 operations will not fit in that deadline. You should either delay execution, parallelize
 or split up the execution in more granular `etype` events like per-sensor events.
 
