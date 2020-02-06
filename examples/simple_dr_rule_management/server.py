@@ -8,7 +8,20 @@ from threading import Lock
 import yaml
 import traceback
 
+# This example uses GitHub REST API to access a private repo, download
+# rules and mirror them on organizations that install the service.
+# The service requires the following permissions:
+# - dr.set.replicant
+# - dr.del.replicant
+# - dr.list.replicant
+# It should also use the following Flairs for its permissions:
+# - segment
+# - lock
+# - secret
+
+# User access token is expected in the GITHUB_TOKEN environment variable.
 GITHUB_TOKEN = os.environ.get( 'GITHUB_TOKEN' )
+# Repo path, example: https://github.com/example-org/corp-dr-rules
 GITHUB_ORG = 'example-org'
 REPO_NAME = 'corp-dr-rules'
 
