@@ -264,7 +264,7 @@ Example for a fictional payload detonation service:
 {
   "action": {
     "type": "str",
-    "desc": "the action to take, one of 'set' or 'get'",
+    "desc": "the action to take, one of 'set' or 'get'.",
   },
   "api_key": {
     "type": "str",
