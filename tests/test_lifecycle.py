@@ -8,16 +8,16 @@ def test_create_service():
 
     svc.setRequestParameters( {
       "action": {
-        "type": "str",
-        "desc": "the action to take, one of 'set' or 'get'.",
+          "type": "str",
+          "desc": "the action to take, one of 'set' or 'get'.",
       },
       "api_key": {
-        "type": "str",
-        "desc": "the api key to use when requesting a payload detonation."
+          "type": "str",
+          "desc": "the api key to use when requesting a payload detonation."
       },
       "retention": {
-        "type": "int",
-        "desc": "the number of days to set when ingesting detonation artifacts."
+          "type": "int",
+          "desc": "the number of days to set when ingesting detonation artifacts."
       }
     } )
 

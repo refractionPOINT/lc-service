@@ -80,6 +80,7 @@ some management tasks for your service.
 
 * `subscribeToDetect( detectName )`: allows you specify the names of detections you would like to receive notifications from in the `onDetection` callback.
 * `publishResource( resourName, resourceCategory, resourceData )`: allows you to make available to LimaCharlie resources private to your service, like a `lookop` for example. You can refer to them as `lcr://service/<serviceName>/<resourceName>`.
+* `setRequestParameters( parameters )`: allows you to specify what parameters are accepted in a request to your service, see the protocol section below for an exact format.
 
 Many helper functions are also provided for your convenience like:
 
