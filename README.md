@@ -248,6 +248,34 @@ used by this service:
 
 * `detect_subscriptions`: a list of detections this service would like to receive for organizations subscribed.
 * `callbacks`: the list of `etypes` supported/used by this service (telling LimaCharlie not to bother with the others).
+* `request_params`: a dictionary describing supported parameters in requests defined to this service, full definition below.
+
+**Request Parameters**
+This dictionary should be of the form `param_name => { type, desc }`. These definitions
+will be used by LimaCharlie to construct simplified request user interfaces to your service.
+Your service should still do full validation of parameters passed to it.
+
+The `type` is one of `int`, `float`, `str`, `bool`.
+
+The `desc` should be a short description of the purpose and interpretation of the parameter.
+
+Example for a fictional payload detonation service:
+```json
+{
+  "action": {
+    "type": "str",
+    "desc": "the action to take, one of 'set' or 'get'",
+  },
+  "api_key": {
+    "type": "str",
+    "desc": "the api key to use when requesting a payload detonation."
+  },
+  "retention": {
+    "type": "int",
+    "desc": "the number of days to set when ingesting detonation artifacts."
+  }
+}
+```
 
 ### org_install
 Indicates that a new organization has installed the service (subscribed).
