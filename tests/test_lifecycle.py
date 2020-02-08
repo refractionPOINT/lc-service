@@ -6,6 +6,21 @@ TEST_SECRET = 'test-secret'
 def test_create_service():
     svc = lcservice.Service( 'test-service', None )
 
+    svc.setRequestParameters( {
+      "action": {
+        "type": "str",
+        "desc": "the action to take, one of 'set' or 'get'.",
+      },
+      "api_key": {
+        "type": "str",
+        "desc": "the api key to use when requesting a payload detonation."
+      },
+      "retention": {
+        "type": "int",
+        "desc": "the number of days to set when ingesting detonation artifacts."
+      }
+    } )
+
     resp = svc._processEvent( {
         'etype' : 'health',
     } )
@@ -19,6 +34,7 @@ def test_create_service():
     assert( 'start_time' in data )
     assert( 0 == len( data[ 'mtd' ][ 'detect_subscriptions' ] ) )
     assert( 2 == len( data[ 'mtd' ][ 'callbacks' ] ) )
+    assert( 3 == len( data[ 'mtd' ][ 'request_params' ] ) )
 
 def test_callback_enabled():
     class _Svc( lcservice.Service ):
