@@ -80,6 +80,7 @@ some management tasks for your service.
 
 * `subscribeToDetect( detectName )`: allows you specify the names of detections you would like to receive notifications from in the `onDetection` callback.
 * `publishResource( resourName, resourceCategory, resourceData )`: allows you to make available to LimaCharlie resources private to your service, like a `lookop` for example. You can refer to them as `lcr://service/<serviceName>/<resourceName>`.
+* `setRequestParameters( parameters )`: allows you to specify what parameters are accepted in a request to your service, see the protocol section below for an exact format.
 
 Many helper functions are also provided for your convenience like:
 
@@ -248,6 +249,34 @@ used by this service:
 
 * `detect_subscriptions`: a list of detections this service would like to receive for organizations subscribed.
 * `callbacks`: the list of `etypes` supported/used by this service (telling LimaCharlie not to bother with the others).
+* `request_params`: a dictionary describing supported parameters in requests defined to this service, full definition below.
+
+**Request Parameters**
+This dictionary should be of the form `param_name => { type, desc }`. These definitions
+will be used by LimaCharlie to construct simplified request user interfaces to your service.
+Your service should still do full validation of parameters passed to it.
+
+The `type` is one of `int`, `float`, `str`, `bool`.
+
+The `desc` should be a short description of the purpose and interpretation of the parameter.
+
+Example for a fictional payload detonation service:
+```json
+{
+  "action": {
+    "type": "str",
+    "desc": "the action to take, one of 'set' or 'get'.",
+  },
+  "api_key": {
+    "type": "str",
+    "desc": "the api key to use when requesting a payload detonation."
+  },
+  "retention": {
+    "type": "int",
+    "desc": "the number of days to set when ingesting detonation artifacts."
+  }
+}
+```
 
 ### org_install
 Indicates that a new organization has installed the service (subscribed).

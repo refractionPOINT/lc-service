@@ -46,6 +46,7 @@ class Service( object ):
         self._threads = gevent.pool.Group()
         self._detectSubscribed = set()
         self._internalResources = {}
+        self._supportedRequestParameters = {}
         self._isTraceComms = isTraceComms
 
         if self._originSecret is None:
@@ -202,6 +203,7 @@ class Service( object ):
             'mtd' : {
                 'detect_subscriptions' : tuple( self._detectSubscribed ),
                 'callbacks' : implementedCb,
+                'request_params' : self._supportedRequestParameters,
             },
         } )
 
@@ -244,6 +246,15 @@ class Service( object ):
             resourceCategory,
             resourceData
         )
+
+    def setRequestParameters( self, params ):
+        '''Set the supported request parameters, with type and description.
+
+        :param params: dictionary of the parameter definitions, see official README for exact definition.
+        '''
+        if not isinstance( params, dict ):
+            raise Exception( "params should be a dictionary" )
+        self._supportedRequestParameters = params
 
     # Helper functions, feel free to override.
     def log( self, msg, data = None ):
