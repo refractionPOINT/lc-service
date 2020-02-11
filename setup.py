@@ -15,6 +15,6 @@ setup( name = 'lcservice',
        license = __license__,
        packages = [ 'lcservice', 'lcservice.servers' ],
        zip_safe = True,
-       install_requires = [ 'limacharlie', 'cherrypy' ],
+       install_requires = [ 'limacharlie', 'cherrypy', 'pyyaml' ],
        long_description = 'Reference implementation for LimaCharlie.io services, allowing anyone to extend and automate services around LimaCharlie.'
 )
