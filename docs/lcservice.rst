@@ -11,6 +11,14 @@ Subpackages
 Submodules
 ----------
 
+lcservice.jobs module
+---------------------
+
+.. automodule:: lcservice.jobs
+    :members:
+    :no-undoc-members:
+    :show-inheritance:
+
 lcservice.service module
 ------------------------
 
