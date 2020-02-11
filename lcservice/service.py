@@ -80,6 +80,7 @@ class Service( object ):
             'sensor_per_24h' : self.every24HourPerSensor,
             'sensor_per_7d' : self.every7DayPerSensor,
             'sensor_per_30d' : self.every30DayPerSensor,
+            'service_error' : self.onServiceError,
         }
 
         self.log( "Starting lc-service v%s (SDK v%s)" % ( lcservice_version, limacharlie.__version__ ) )
@@ -163,12 +164,14 @@ class Service( object ):
             if deadline is not None and now > deadline:
                 self.logCritical( 'event %s over deadline by %ss' % ( eType, now - deadline ) )
 
-    def response( self, isSuccess = True, isDoRetry = False, data = {} ):
+    def response( self, isSuccess = True, isDoRetry = False, data = {}, error = None, jobs = [] ):
         '''Generate a custom response JSON message.
 
         :param isSuccess: True for success, False for failure.
         :param isDoRetry: if True indicates to LimaCharlie to retry the request.
         :param data: JSON data to include in the response.
+        :param error: an error string to report to the organization.
+        :param jobs: new Jobs or updates to exsiting Jobs.
         '''
         ret = {
             'success' : isSuccess,
@@ -177,6 +180,15 @@ class Service( object ):
 
         if not isSuccess:
             ret[ 'retry' ] = isDoRetry
+
+        if error is not None:
+            ret[ 'error' ] = str( error )
+
+        if jobs is not None:
+            if not isinstance( jobs, ( list, tuple ) ):
+                jobs = [ jobs ]
+            if 0 != len( jobs ):
+                ret[ 'jobs' ] = [ j.toJson() for j in jobs ]
 
         return ret
 
@@ -444,6 +456,12 @@ class Service( object ):
     @_unsupportedFunc
     def onLogEvent( self, lc, oid, request ):
         '''Called when a log event is received.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def onServiceError( self, lc, oid, request ):
+        '''Called when LC cloud encounters an error with this service.
         '''
         return self.responseNotImplemented()
 

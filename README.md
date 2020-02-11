@@ -42,6 +42,7 @@ and implement one or more callback functions:
 * `onRequest`: an ad-hoc request for your service is received.
 * `onDeploymentEvent`: a deployment event (like sensor enrollment, over-quota, etc) is received from the cloud.
 * `onLogEvent`: a new log has been ingested in the LimaCharlie cloud.
+* `onServiceError`: the LimaCharlie encountered an error while dealing with your service.
 
 as well as any number of callbacks from a series of cron-like functions provided
 with various granularity (global, per organization or per sensor).
@@ -67,13 +68,14 @@ All the callbacks receive the same arguments `( lc, oid, request )`:
 * `lc`: an instance of the [LimaCharlie SDK](https://github.com/refractionPOINT/python-limacharlie/) pre-authenticated for the relevant organization.
 * `oid` the Organization ID of the relevant organization.
 * `request`: a `lcservice.service.Request` object containing a `eventType`, `messageId` and `data` properties.
+* for `*PerSensor` callbacks, the `request` contains a `sid` value for a specific sensor.
 
 Each callback returns one of 4 values:
 
 * `True`: indicates the callback was successful.
 * `False`: indicates the callback was not successful, but the request should NOT be retried.
 * `None`: indicaes the callback was not successful, but the request SHOULD be retried.
-* `self.response( isSuccess = True, isDoRetry = False, data = {} )`: to customize the behavior requested of the LimaCharlie platform.
+* `self.response( isSuccess = True, isDoRetry = False, data = {}, error = None, jobs = [] )`: to customize the behavior requested of the LimaCharlie platform.
 
 In addition to the main lifecycle callbacks, some functions are available to simplify
 some management tasks for your service.
@@ -201,6 +203,19 @@ A service may register to receive some detections from LimaCharlie. That list of
 detection of interest is updated at recurring interval in LimaCharlie and may take
 up to 5 minutes to update.
 
+### Tasking Sensors
+If you need to task a sensor, generally favor using a combination of investigation_id
+and D&R rule (as seen in the `job_usage` example) if the tasking is a core part of
+what the service is doing. You can use `sensor.simpleRequest()` for doing sporadic
+requests, but doing so (and `lc.make_interactive()`) has a few drawbacks:
+
+* Tasking a sensor and getting a reply can be slow in some cases, leading to timeouts of your service.
+* Tasking sensors interactively requires additional `output.*` permissions.
+* Interactive tasking has a significant overhead.
+
+Building your service flow around detections and tracking state using investigation_id
+will allow your service to scale better.
+
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
 from LimaCharlie, making passive deployments through AWS Lambda, GCP
@@ -225,6 +240,8 @@ A response from the service, also JSON is expected to have the following format:
 * `success`: a boolean indicating whether the call was successful.
 * `retry`: if `success` was `false`, should LimaCharlie attempt to re-deliver this message.
 * `data`: arbitrary JSON, content based on the `etype` in the request.
+* `error`: optionally an error to report to the organization.
+* `jobs`: optionally new jobs or updates to existing jobs.
 
 Most requests will have a deadline of +590s in the future. This may mean that longer
 operations will not fit in that deadline. You should either delay execution, parallelize
@@ -350,3 +367,6 @@ deployment events in a LimaCharlie [Output](https://doc.limacharlie.io/en/master
 ### log_event
 Called when a log has been ingested in LimaCharlie. The `data` component will contain a `routing` and `event` component similarly to the
 deployment events in a LimaCharlie [Output](https://doc.limacharlie.io/en/master/outputs/).
+
+### service_error
+Called when the LimaCharlie cloud encounters an error while dealing with your service.
