@@ -1,6 +1,6 @@
 from setuptools import setup
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __author__ = "Maxime Lamothe-Brassard ( Refraction Point, Inc )"
 __author_email__ = "maxime@refractionpoint.com"
 __license__ = "Apache v2"
@@ -15,6 +15,6 @@ setup( name = 'lcservice',
        license = __license__,
        packages = [ 'lcservice', 'lcservice.servers' ],
        zip_safe = True,
-       install_requires = [ 'limacharlie', 'cherrypy' ],
+       install_requires = [ 'limacharlie', 'cherrypy', 'pyyaml' ],
        long_description = 'Reference implementation for LimaCharlie.io services, allowing anyone to extend and automate services around LimaCharlie.'
 )
