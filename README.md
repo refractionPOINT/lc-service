@@ -175,6 +175,19 @@ control, we generally recommend you enable the following:
 * `secret`: this ensures that the content of the resources your service creates are not visible to others. It's not as critical but if you intend to install proprietary [Detection & Response rules](https://doc.limacharlie.io/en/master/dr/) you likely want it.
 * `segment`: this ensures that your services does not see any resources it has not created itself. This helps ensure your service doesn't delete other services' resources as well as maintain general privacy.
 
+### Tasking Sensors
+If you need to task a sensor, generally favor using a combination of investigation_id
+and D&R rule (as seen in the `job_usage` example) if the tasking is a core part of
+what the service is doing. You can use `sensor.simpleRequest()` for doing sporadic
+requests, but doing so (and `lc.make_interactive()`) has a few drawbacks:
+
+* Tasking a sensor and getting a reply can be slow in some cases, leading to timeouts of your service.
+* Tasking sensors interactively requires additional `output.*` permissions.
+* Interactive tasking has a significant overhead.
+
+Building your service flow around detections and tracking state using investigation_id
+will allow your service to scale better.
+
 ## Tips
 The following are general tips to know when developing new services.
 
@@ -202,19 +215,6 @@ figuring out the permissions you require ahead of time.
 A service may register to receive some detections from LimaCharlie. That list of
 detection of interest is updated at recurring interval in LimaCharlie and may take
 up to 5 minutes to update.
-
-### Tasking Sensors
-If you need to task a sensor, generally favor using a combination of investigation_id
-and D&R rule (as seen in the `job_usage` example) if the tasking is a core part of
-what the service is doing. You can use `sensor.simpleRequest()` for doing sporadic
-requests, but doing so (and `lc.make_interactive()`) has a few drawbacks:
-
-* Tasking a sensor and getting a reply can be slow in some cases, leading to timeouts of your service.
-* Tasking sensors interactively requires additional `output.*` permissions.
-* Interactive tasking has a significant overhead.
-
-Building your service flow around detections and tracking state using investigation_id
-will allow your service to scale better.
 
 # Protocol
 LimaCharlie Services rely entirely on response to REST calls (webhooks)
