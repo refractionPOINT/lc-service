@@ -7,18 +7,18 @@ def test_create_service():
     svc = lcservice.Service( 'test-service', None )
 
     svc.setRequestParameters( {
-      "action": {
-          "type": "str",
-          "desc": "the action to take, one of 'set' or 'get'.",
-      },
-      "api_key": {
-          "type": "str",
-          "desc": "the api key to use when requesting a payload detonation."
-      },
-      "retention": {
-          "type": "int",
-          "desc": "the number of days to set when ingesting detonation artifacts."
-      }
+        "action": {
+            "type": "str",
+            "desc": "the action to take, one of 'set' or 'get'.",
+        },
+        "api_key": {
+            "type": "str",
+            "desc": "the api key to use when requesting a payload detonation."
+        },
+        "retention": {
+            "type": "int",
+            "desc": "the number of days to set when ingesting detonation artifacts."
+        }
     } )
 
     resp = svc._processEvent( {
