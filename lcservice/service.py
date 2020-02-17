@@ -222,17 +222,37 @@ class Service( object ):
     def _onResourceAccess( self, lc, oid, request ):
         resName = request.data[ 'resource' ]
         isWithData = request.data[ 'is_include_data' ]
-        resInfo = self._internalResources.get( resName, None )
-        if resInfo is None:
-            return self.response( isSuccess = False, isRetry = False, data = {
-                'error' : 'resource not available',
-            })
-        ret = {
-            'hash' : resInfo[ 0 ],
-            'res_cat' : resInfo[ 1 ],
-        }
-        if isWithData:
-            ret[ 'res_data' ] = resInfo[ 2 ]
+
+        if isinstance( resName, ( list, tuple ) ):
+            # A batch of resources is requested.
+            ret = {
+                'resources' : {}
+            }
+            for res in resName:
+                resInfo = self._internalResources.get( res, None )
+                if resInfo is None:
+                    return self.response( isSuccess = False, isRetry = False, data = {
+                        'error' : 'resource not available',
+                    })
+                ret[ 'resources' ][ res ] = {
+                    'hash' : resInfo[ 0 ],
+                    'res_cat' : resInfo[ 1 ],
+                }
+                if isWithData:
+                    ret[ 'resources' ][ res ][ 'res_data' ] = resInfo[ 2 ]
+        else:
+            # A single resource is requested.
+            resInfo = self._internalResources.get( resName, None )
+            if resInfo is None:
+                return self.response( isSuccess = False, isRetry = False, data = {
+                    'error' : 'resource not available',
+                })
+            ret = {
+                'hash' : resInfo[ 0 ],
+                'res_cat' : resInfo[ 1 ],
+            }
+            if isWithData:
+                ret[ 'res_data' ] = resInfo[ 2 ]
         return self.response( isSuccess = True, data = ret )
 
     def subscribeToDetect( self, detectName ):

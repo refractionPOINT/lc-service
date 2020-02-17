@@ -323,6 +323,10 @@ The expected response by LimaCharlie has the following data elements:
 * `res_cat`: the resource category (like `lookup` or `detect`) of the resource returned.
 * `res_data`: if the data was requested, this is the `base64(data)`.
 
+The same request/reply structure as above may also be requested in batches. In that case, the `resource`
+request contains a list of resources, while the response contains the same elements as described but
+encapsulated in a `resources[resource_name] = {hash, res_cat, res_data}` element.
+
 ### org_per_*
 Convenience cron-like event. The LimaCharlie cloud emits those events at recurring
 interval on a per-organization basis so you don't have to keep track of timing or
