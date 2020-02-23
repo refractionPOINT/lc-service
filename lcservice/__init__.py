@@ -7,6 +7,7 @@ __license__ = "Apache v2"
 __copyright__ = "Copyright (c) 2018 Refraction Point, Inc"
 
 from .service import Service  # noqa: F401
+from .service import InteractiveService # noqa: F401
 from . import servers         # noqa: F401
 
 def enableGRPC():
