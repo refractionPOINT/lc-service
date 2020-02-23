@@ -1,5 +1,6 @@
 import limacharlie
 from . import __version__ as lcservice_version
+from jobs import Job
 import gevent
 from gevent.lock import BoundedSemaphore
 import gevent.pool
@@ -674,14 +675,18 @@ class InteractiveService( Service ):
             return self.onDetection( lc, oid, request )
 
         # This is an interactive response.
-        _, callbackId = invId.split( '/', 1 )
+        _, callbackId, jobId = invId.split( '/', 2 )
 
         callback = self._callbackHashes.get( callbackId, None )
         if callback is None:
             self.logCritical( f"Unknown callback: {callbackId}" )
             return False
 
-        return callback( lc, oid, event )
+        job = None
+        if jobId != '':
+            job = Job( jobId )
+
+        return callback( lc, oid, event, job )
 
     def _every1HourPerOrg( self, lc, oid, request ):
         ret = True
@@ -738,15 +743,18 @@ class InteractiveService( Service ):
         this = self
 
         class _interactiveSensor( limacharlie.Sensor.Sensor ):
-            def task( self, tasks, inv_id = None, callback = None ):
+            def task( self, tasks, inv_id = None, callback = None, job = None ):
                 if callback is not None:
-                    return self._taskWithCallback( tasks, callback )
+                    return self._taskWithCallback( tasks, callback, job )
                 return super().task( tasks, inv_id = inv_id )
 
-            def _taskWithCallback( self, cmd, callback ):
+            def _taskWithCallback( self, cmd, callback, job ):
                 sensor = self._manager.sensor( self.sid )
                 cbHash = this._getCallbackKey( callback.__name__ )
-                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}" )
+                jobId = ''
+                if job is not None:
+                    jobId = job.getId()
+                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}/{jobId}" )
 
         class _interactiveManager( limacharlie.Manager ):
             def sensor( self, sid, inv_id = None ):
