@@ -745,7 +745,10 @@ class InteractiveService( Service ):
         sync.pushRules( rules )
 
     def _removeInteractiveRule( self, lc ):
-        lc.del_rule( self._rootInvestigationId, namespace = 'replicant' )
+        try:
+            lc.del_rule( self._rootInvestigationId, namespace = 'replicant' )
+        except:
+            self.logCritical( traceback.format_exc() )
 
     def wrapSdk( self, *args, **kwargs ):
         this = self
