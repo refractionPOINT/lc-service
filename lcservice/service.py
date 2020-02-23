@@ -618,6 +618,12 @@ def _retExecOrExcWithKey( f, o, timeout ):
         return ( k, e )
 
 class InteractiveService( Service ):
+    '''InteractiveService provide for asynchronous tasking of sensors.
+
+    Services inheriting from InteractiveService require at a minimum the
+    following permissions: "dr.list.replicant", "dr.del.replicant",
+    "dr.set.replicant" and "sensor.task".
+    '''
 
     def _onStartup( self ):
         # We hook the detections to provide
