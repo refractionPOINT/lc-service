@@ -675,7 +675,7 @@ class InteractiveService( Service ):
             return self.onDetection( lc, oid, request )
 
         # This is an interactive response.
-        _, callbackId, jobId = invId.split( '/', 2 )
+        _, callbackId, jobId, ctx = invId.split( '/', 3 )
 
         callback = self._callbackHashes.get( callbackId, None )
         if callback is None:
@@ -686,7 +686,7 @@ class InteractiveService( Service ):
         if jobId != '':
             job = Job( jobId )
 
-        return callback( lc, oid, event, job )
+        return callback( lc, oid, event, job, ctx )
 
     def _every1HourPerOrg( self, lc, oid, request ):
         ret = True
@@ -743,18 +743,18 @@ class InteractiveService( Service ):
         this = self
 
         class _interactiveSensor( limacharlie.Sensor.Sensor ):
-            def task( self, tasks, inv_id = None, callback = None, job = None ):
+            def task( self, tasks, inv_id = None, callback = None, job = None, ctx = '' ):
                 if callback is not None:
-                    return self._taskWithCallback( tasks, callback, job )
+                    return self._taskWithCallback( tasks, callback, job, ctx )
                 return super().task( tasks, inv_id = inv_id )
 
-            def _taskWithCallback( self, cmd, callback, job ):
+            def _taskWithCallback( self, cmd, callback, job, ctx ):
                 sensor = self._manager.sensor( self.sid )
                 cbHash = this._getCallbackKey( callback.__name__ )
                 jobId = ''
                 if job is not None:
                     jobId = job.getId()
-                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}/{jobId}" )
+                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}/{jobId}/{ctx}" )
 
         class _interactiveManager( limacharlie.Manager ):
             def sensor( self, sid, inv_id = None ):
