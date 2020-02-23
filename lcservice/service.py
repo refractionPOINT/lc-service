@@ -1,6 +1,6 @@
 import limacharlie
 from . import __version__ as lcservice_version
-from jobs import Job
+from .jobs import Job
 import gevent
 from gevent.lock import BoundedSemaphore
 import gevent.pool
