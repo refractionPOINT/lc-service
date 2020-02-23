@@ -669,6 +669,8 @@ class InteractiveService( Service ):
                 continue
             self._callbackHashes[ self._getCallbackKey( elem ) ] = getattr( self, elem )
 
+        return self.onStartup()
+
     def _getCallbackKey( self, cbName ):
         return hashlib.md5( f"{self._originSecret}/{cbName}".encode() ).hexdigest()[ : 8 ]
 
