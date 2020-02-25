@@ -1,4 +1,5 @@
 import lcservice
+from lcservice.jobs import Job
 import os
 
 class MyService( lcservice.InteractiveService ):
@@ -15,13 +16,37 @@ class MyService( lcservice.InteractiveService ):
         return True
 
     def onRequest( self, lc, oid, request ):
-        lc.sensor( request.data[ 'sid' ] ).task( [ 'os_packages' ],
-                                                 callback = self.processPackages )
-        return True
+        sid = request.data[ 'sid' ]
+        ctx = "some-arbitrary-context-as-a-string"
 
-    def processPackages( self, lc, oid, event ):
+        # Prime a new job for this request.
+        job = Job()
+        job.setCause( "Starting package listing." )
+        job.addSensor( sid )
+
+        # We want to run an os_package and call the
+        # processPackages function with the response when
+        # it arrives. We also want to propagate a job
+        # and an arbirtrary context to this callback.
+        lc.sensor( sid ).task( [ 'os_packages' ],
+                               callback = self.processPackages,
+                               job = job,
+                               ctx = ctx )
+
+        # Update the job to the user.
+        return self.response( isSuccess = True, jobs = [ job ] )
+
+    def processPackages( self, lc, oid, event, job, ctx ):
+        # Ok we received the response from the os_packages.
         self.log( event )
-        return True
+
+        # Add something to the original job and close it.
+        job.narrate( f"Our context was: {ctx}." )
+        job.narrate( "We're done!" )
+        job.close()
+
+        # Update the job to the user.
+        return self.response( isSuccess = True, jobs = [ job ] )
 
 def main():
     # Bind to a potentially dynamic port for things like Google Cloud Run

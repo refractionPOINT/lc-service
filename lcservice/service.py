@@ -634,22 +634,28 @@ class InteractiveService( Service ):
         self._handlers[ 'org_install' ] = self._onOrgInstalled
         self._handlers[ 'org_uninstall' ] = self._onOrgUninstalled
 
-        self._rootInvestigationId = f"__{self._serviceName}_x"
+        self._rootInvestigationId = f"svc-{self._serviceName}-ex"
         self._interactiveRule = yaml.safe_load( f'''
             {self._rootInvestigationId}:
               namespace: replicant
               detect:
-                op: starts with
-                path: routing/investigation_id
-                value: {self._rootInvestigationId}
+                op: and
+                rules:
+                  - op: starts with
+                    path: routing/investigation_id
+                    value: {self._rootInvestigationId}
+                  - op: is
+                    not: true
+                    path: routing/event_type
+                    value: CLOUD_NOTIFICATION
               respond:
                 - action: report
-                  name: {self._rootInvestigationId}
+                  name: __{self._rootInvestigationId}
         ''' )
 
         # Get all the detections, we'll do the routing
         # to the right callbacks internally.
-        self.subscribeToDetect( self._rootInvestigationId )
+        self.subscribeToDetect( f"__{self._rootInvestigationId}" )
 
         # We make a table of all possible callbacks, which we
         # limit to methods of this service object. We map each
