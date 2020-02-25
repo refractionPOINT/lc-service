@@ -16,7 +16,7 @@ class Job( object ):
         if jobId is None:
             self._isNew = True
             jobId = str( uuid.uuid4() )
-            self._json[ 'start' ] = int( time.time() )
+            self._json[ 'start' ] = int( time.time() * 1000 )
         self._json[ 'id' ] = jobId
 
     def getId( self ):
