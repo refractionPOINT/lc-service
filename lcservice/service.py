@@ -1,5 +1,6 @@
 import limacharlie
 from . import __version__ as lcservice_version
+from .jobs import Job
 import gevent
 from gevent.lock import BoundedSemaphore
 import gevent.pool
@@ -13,6 +14,7 @@ import json
 import traceback
 import uuid
 import base64
+import yaml
 
 PROTOCOL_VERSION = 1
 
@@ -85,7 +87,7 @@ class Service( object ):
 
         self.log( "Starting lc-service v%s (SDK v%s)" % ( lcservice_version, limacharlie.__version__ ) )
 
-        self.onStartup()
+        self._onStartup()
 
     def _verifyOrigin( self, data, signature ):
         data = json.dumps( data, sort_keys = True )
@@ -126,7 +128,12 @@ class Service( object ):
         lcApi = None
         if oid is not None and jwt is not None:
             invId = str( uuid.uuid4() )
-            lcApi = limacharlie.Manager( oid = oid, jwt = jwt, inv_id = invId )
+            # We support a special function to wrap the LC API
+            # if needed to provide some added magic.
+            if hasattr( self, 'wrapSdk' ):
+                lcApi = getattr( self, 'wrapSdk' )( oid = oid, jwt = jwt, inv_id = invId )
+            else:
+                lcApi = limacharlie.Manager( oid = oid, jwt = jwt, inv_id = invId )
 
         try:
             with self._lock:
@@ -222,17 +229,37 @@ class Service( object ):
     def _onResourceAccess( self, lc, oid, request ):
         resName = request.data[ 'resource' ]
         isWithData = request.data[ 'is_include_data' ]
-        resInfo = self._internalResources.get( resName, None )
-        if resInfo is None:
-            return self.response( isSuccess = False, isRetry = False, data = {
-                'error' : 'resource not available',
-            })
-        ret = {
-            'hash' : resInfo[ 0 ],
-            'res_cat' : resInfo[ 1 ],
-        }
-        if isWithData:
-            ret[ 'res_data' ] = resInfo[ 2 ]
+
+        if isinstance( resName, ( list, tuple ) ):
+            # A batch of resources is requested.
+            ret = {
+                'resources' : {}
+            }
+            for res in resName:
+                resInfo = self._internalResources.get( res, None )
+                if resInfo is None:
+                    return self.response( isSuccess = False, isRetry = False, data = {
+                        'error' : 'resource not available',
+                    })
+                ret[ 'resources' ][ res ] = {
+                    'hash' : resInfo[ 0 ],
+                    'res_cat' : resInfo[ 1 ],
+                }
+                if isWithData:
+                    ret[ 'resources' ][ res ][ 'res_data' ] = resInfo[ 2 ]
+        else:
+            # A single resource is requested.
+            resInfo = self._internalResources.get( resName, None )
+            if resInfo is None:
+                return self.response( isSuccess = False, isRetry = False, data = {
+                    'error' : 'resource not available',
+                })
+            ret = {
+                'hash' : resInfo[ 0 ],
+                'res_cat' : resInfo[ 1 ],
+            }
+            if isWithData:
+                ret[ 'res_data' ] = resInfo[ 2 ]
         return self.response( isSuccess = True, data = ret )
 
     def subscribeToDetect( self, detectName ):
@@ -408,6 +435,12 @@ class Service( object ):
         return g.imap_unordered( lambda o: _retExecOrExcWithKey( f, o, timeout ), objects.items() )
 
     # LC Service Lifecycle Functions
+    def _onStartup( self ):
+        # Private trampoline function so Service flavors
+        # can overload it while leaving the onStartup()
+        # for normal users.
+        return self.onStartup()
+
     def onStartup( self ):
         '''Called when the service is first instantiated.
         '''
@@ -583,3 +616,168 @@ def _retExecOrExcWithKey( f, o, timeout ):
                 return ( k, f( o ) )
     except ( Exception, gevent.Timeout ) as e:
         return ( k, e )
+
+class InteractiveService( Service ):
+    '''InteractiveService provide for asynchronous tasking of sensors.
+
+    Services inheriting from InteractiveService require at a minimum the
+    following permissions: "dr.list.replicant", "dr.del.replicant",
+    "dr.set.replicant" and "sensor.task".
+    '''
+
+    def _onStartup( self ):
+        # We hook the detections to provide
+        # a simple tasking --> response loop that is
+        # also asynchronous (behaves better in Services).
+        self._handlers[ 'detection' ] = self._interactiveOnDetection
+        self._handlers[ 'org_per_1h' ] = self._every1HourPerOrg
+        self._handlers[ 'org_install' ] = self._onOrgInstalled
+        self._handlers[ 'org_uninstall' ] = self._onOrgUninstalled
+
+        self._rootInvestigationId = f"svc-{self._serviceName}-ex"
+        self._interactiveRule = yaml.safe_load( f'''
+            {self._rootInvestigationId}:
+              namespace: replicant
+              detect:
+                op: and
+                rules:
+                  - op: starts with
+                    path: routing/investigation_id
+                    value: {self._rootInvestigationId}
+                  - op: is
+                    not: true
+                    path: routing/event_type
+                    value: CLOUD_NOTIFICATION
+              respond:
+                - action: report
+                  name: __{self._rootInvestigationId}
+        ''' )
+
+        # Get all the detections, we'll do the routing
+        # to the right callbacks internally.
+        self.subscribeToDetect( f"__{self._rootInvestigationId}" )
+
+        # We make a table of all possible callbacks, which we
+        # limit to methods of this service object. We map each
+        # one to a hash(shared_secret+callbackName) which we use
+        # when we issue the tasking. This avoids user having to
+        # manually register their callbacks ahead of time, and it
+        # also prevents other entities than this service from
+        # faking callbacks.
+        # This may seem complex, but remember that this has to
+        # work statelessly since we cannot guarantee the response
+        # will come back to the same instance of the service.
+        self._callbackHashes = {}
+        for elem in dir( self ):
+            if elem.startswith( '_' ):
+                continue
+            if not callable( getattr( self, elem ) ):
+                continue
+            self._callbackHashes[ self._getCallbackKey( elem ) ] = getattr( self, elem )
+
+        return self.onStartup()
+
+    def _getCallbackKey( self, cbName ):
+        return hashlib.md5( f"{self._originSecret}/{cbName}".encode() ).hexdigest()[ : 8 ]
+
+    def _interactiveOnDetection( self, lc, oid, request ):
+        # If the detect does not have the root investigation id
+        # it means it's destined for the real service.
+        event = request.data.get( 'detect', {} )
+        invId = event.get( 'routing', {} ).get( 'investigation_id', '' )
+        if not invId.startswith( self._rootInvestigationId ):
+            return self.onDetection( lc, oid, request )
+
+        # This is an interactive response.
+        _, callbackId, jobId, ctx = invId.split( '/', 3 )
+
+        callback = self._callbackHashes.get( callbackId, None )
+        if callback is None:
+            self.logCritical( f"Unknown callback: {callbackId}" )
+            return False
+
+        job = None
+        if jobId != '':
+            job = Job( jobId )
+
+        return callback( lc, oid, event, job, ctx )
+
+    def _every1HourPerOrg( self, lc, oid, request ):
+        ret = True
+
+        # Check if the user has implemented the callback.
+        # If yes, call it and use its return value.
+        originalCb = getattr( self, 'every1HourPerOrg' )
+        if not hasattr( originalCb, 'is_not_supported' ):
+            ret = self.every1HourPerOrg( lc, oid, request )
+
+        self._applyInteractiveRule( lc )
+
+        return ret
+
+    def _onOrgInstalled( self, lc, oid, request ):
+        ret = True
+
+        # Check if the user has implemented the callback.
+        # If yes, call it and use its return value.
+        originalCb = getattr( self, 'onOrgInstalled' )
+        if not hasattr( originalCb, 'is_not_supported' ):
+            ret = self.onOrgInstalled( lc, oid, request )
+
+        self._applyInteractiveRule( lc )
+
+        return ret
+
+    def _onOrgUninstalled( self, lc, oid, request ):
+        ret = True
+
+        # Check if the user has implemented the callback.
+        # If yes, call it and use its return value.
+        originalCb = getattr( self, 'onOrgUninstalled' )
+        if not hasattr( originalCb, 'is_not_supported' ):
+            ret = self.onOrgUninstalled( lc, oid, request )
+
+        self._removeInteractiveRule( lc )
+
+        return ret
+
+    def _applyInteractiveRule( self, lc ):
+        # Sync in our D&R rule but don't use "isForce"
+        # since the user may also have their own D&R rules
+        sync = limacharlie.Sync( manager = lc )
+        rules = {
+            'rules' : self._interactiveRule,
+        }
+        sync.pushRules( rules )
+
+    def _removeInteractiveRule( self, lc ):
+        try:
+            lc.del_rule( self._rootInvestigationId, namespace = 'replicant' )
+        except:
+            self.logCritical( traceback.format_exc() )
+
+    def wrapSdk( self, *args, **kwargs ):
+        this = self
+
+        class _interactiveSensor( limacharlie.Sensor.Sensor ):
+            def task( self, tasks, inv_id = None, callback = None, job = None, ctx = '' ):
+                if callback is not None:
+                    return self._taskWithCallback( tasks, callback, job, ctx )
+                return super().task( tasks, inv_id = inv_id )
+
+            def _taskWithCallback( self, cmd, callback, job, ctx ):
+                sensor = self._manager.sensor( self.sid )
+                cbHash = this._getCallbackKey( callback.__name__ )
+                jobId = ''
+                if job is not None:
+                    jobId = job.getId()
+                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}/{jobId}/{ctx}" )
+
+        class _interactiveManager( limacharlie.Manager ):
+            def sensor( self, sid, inv_id = None ):
+                s = _interactiveSensor( self, sid )
+                if inv_id is not None:
+                    s.setInvId( inv_id )
+                return s
+
+        return _interactiveManager( *args, **kwargs )

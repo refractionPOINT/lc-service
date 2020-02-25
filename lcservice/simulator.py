@@ -11,24 +11,24 @@ import time
 import uuid
 
 def main():
-    verbs = [
-        'install',
-        'uninstall',
-        'health',
-    ]
     parser = argparse.ArgumentParser( prog = 'python -m lcservice.simulator' )
     parser.add_argument( 'url',
                          type = str,
                          help = 'the URL of the service to call.' )
     parser.add_argument( 'action',
                          type = str,
-                         help = 'action to run, one of %s.' % ( ', '.join( verbs ), ) )
+                         help = 'action to run, one of supported callbacks (see doc).' )
     parser.add_argument( '-s', '--secret',
                          type = str,
                          required = False,
                          dest = 'secret',
                          default = '',
                          help = 'optionally specify the shared secret, you can omit if the service was started with secret disabled.' )
+    parser.add_argument( '-d', '--data',
+                         type = eval,
+                         default = {},
+                         dest = 'data',
+                         help = 'data to include in the request, this string gets evaluated as python code' )
 
     args = parser.parse_args()
 
@@ -42,19 +42,14 @@ def main():
     jwt = lc._jwt
     secret = args.secret
 
-    if 'install' == args.action:
-        print( json.dumps( postData( args.url, secret, oid, jwt, 'org_install' ), indent = 2 ) )
-    elif 'uninstall' == args.action:
-        print( json.dumps( postData( args.url, secret, oid, jwt, 'org_uninstall' ), indent = 2 ) )
-    elif 'health' == args.action:
-        print( json.dumps( postData( args.url, secret, None, None, 'health' ), indent = 2 ) )
+    print( json.dumps( postData( args.url, secret, oid, jwt, args.action, data = args.data ), indent = 2 ) )
 
 def postData( dest, secret, oid, jwt, eventType, data = {} ):
     data = {
         'data' : data,
     }
     data[ 'oid' ] = oid
-    data[ 'deadline' ] = int( time.time() ) + 60
+    data[ 'deadline' ] = int( time.time() ) + 590
     data[ 'mid' ] = str( uuid.uuid4() )
     data[ 'etype' ] = eventType
     data[ 'jwt' ] = jwt

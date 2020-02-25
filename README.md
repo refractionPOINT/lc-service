@@ -91,6 +91,49 @@ Many helper functions are also provided for your convenience like:
 * `delay()` and `schedule()`
 * `parallelExec()`
 
+### Interactive Service
+If your service will be doing interactive tasking of sensors (sendind a task
+and analysing the response), you may want to inherit from the `lcservice.InteractiveService`
+like this:
+
+```python
+class MyService( lcservice.InteractiveService ):
+```
+
+Doing this will install some boilerplate D&R rules that can simplify this flow.
+The service will behave the same as a normal `lcservice.Service`, but sensor
+objects gotten through the SDK's `lc.sensor( sid )` function will now support
+additional arguments to their `sensor.task()` function.
+
+The new arguments allow you to specify the following:
+
+* `callback`: specify a local callback function to receive the response from the sensor.
+* `job`: a Job object to propagate to this callback with the response.
+* `ctx`: an arbitrary str that can be used to propagate more context to the response callbacl.
+
+Example:
+
+```python
+job = Job()
+myContext = 'some-string'
+lc.sensor( sid ).task( [ 'os_packages' ], callback = self.processPacakages, job = job, ctx = myContext )
+```
+
+Using callbacks like described above is MUCH more efficient than turning on the
+SDK's Interactive Mode. The Interactive Mode requires your service to have permissions
+to create/list/delete Outputs and uses an HTTP Output to receive the response. If the task
+you are sending to a sensor takes a long time, your service may timeout and becomes more
+fragile while the callback method of the InteractiveService is entirely asynchronous.
+
+The InteractiveService requires the following permissions to operate (on top of whatever permissions you require):
+
+* `dr.list.replicant`
+* `dr.del.replicant`
+* `dr.set.replicant`
+* `sensor.task`
+
+For an actual sample of a service using this, see the [interactive_service example](examples/interactive_service).
+
 ## Deploying
 
 Deploying is slightly different depending on the transport chose.
@@ -187,6 +230,8 @@ requests, but doing so (and `lc.make_interactive()`) has a few drawbacks:
 
 Building your service flow around detections and tracking state using investigation_id
 will allow your service to scale better.
+
+This solution has been simplified for you by the introduction of the [InteractiveService class](#interactive-service).
 
 ## Tips
 The following are general tips to know when developing new services.
@@ -322,6 +367,10 @@ The expected response by LimaCharlie has the following data elements:
 * `hash`: the sha256 of the content of the resource, used to determine if LimaCharlie needs to refresh it.
 * `res_cat`: the resource category (like `lookup` or `detect`) of the resource returned.
 * `res_data`: if the data was requested, this is the `base64(data)`.
+
+The same request/reply structure as above may also be requested in batches. In that case, the `resource`
+request contains a list of resources, while the response contains the same elements as described but
+encapsulated in a `resources[resource_name] = {hash, res_cat, res_data}` element.
 
 ### org_per_*
 Convenience cron-like event. The LimaCharlie cloud emits those events at recurring
