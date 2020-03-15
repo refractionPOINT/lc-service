@@ -581,6 +581,24 @@ class Service( object ):
         return self.responseNotImplemented()
 
     @_unsupportedFunc
+    def every1HourPerSensor( self, lc, oid, request ):
+        '''Called every 1 hours once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every3HourPerSensor( self, lc, oid, request ):
+        '''Called every 3 hours once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
+    def every12HourPerSensor( self, lc, oid, request ):
+        '''Called every 12 hours once per sensor.
+        '''
+        return self.responseNotImplemented()
+
+    @_unsupportedFunc
     def every24HourPerSensor( self, lc, oid, request ):
         '''Called every 24 hours once per sensor.
         '''
