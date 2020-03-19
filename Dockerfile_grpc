@@ -4,5 +4,5 @@ FROM refractionpoint/lc-service:latest
 # a long time. To streamline the process of building
 # services with GRPC you can use this simple intermediate.
 RUN apk add --update alpine-sdk linux-headers
-RUN pip install grpcio
+RUN pip install google-cloud grpcio
 RUN apk del alpine-sdk linux-headers
