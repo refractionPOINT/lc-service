@@ -1,0 +1,8 @@
+FROM refractionpoint/lc-service:latest
+
+# GRPC under Alpine must compile from source which takes
+# a long time. To streamline the process of building
+# services with GRPC you can use this simple intermediate.
+RUN apk add --update alpine-sdk linux-headers
+RUN pip install grpcio
+RUN apk del alpine-sdk linux-headers
