@@ -660,11 +660,15 @@ class InteractiveService( Service ):
             {self._rootInvestigationId}:
               namespace: replicant
               detect:
-                op: is
-                event: CLOUD_NOTIFICATION
-                op: starts with
-                path: routing/investigation_id
-                value: {self._rootInvestigationId}
+                op: and
+                rules:
+                  - op: starts with
+                    path: routing/investigation_id
+                    value: {self._rootInvestigationId}
+                  - op: is
+                    not: true
+                    path: routing/event_type
+                    value: CLOUD_NOTIFICATION
               respond:
                 - action: report
                   name: __{self._rootInvestigationId}
