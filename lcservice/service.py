@@ -655,7 +655,7 @@ class InteractiveService( Service ):
         self._handlers[ 'org_install' ] = self._onOrgInstalled
         self._handlers[ 'org_uninstall' ] = self._onOrgUninstalled
 
-        self._rootInvestigationId = f"svc-{self._serviceName}-ex"
+        self._rootInvestigationId = "svc-%s-ex" % ( self._serviceName, )
         self._interactiveRule = yaml.safe_load( f'''
             {self._rootInvestigationId}:
               namespace: replicant
@@ -676,7 +676,7 @@ class InteractiveService( Service ):
 
         # Get all the detections, we'll do the routing
         # to the right callbacks internally.
-        self.subscribeToDetect( f"__{self._rootInvestigationId}" )
+        self.subscribeToDetect( "__%s" % ( self._rootInvestigationId, ) )
 
         # We make a table of all possible callbacks, which we
         # limit to methods of this service object. We map each
@@ -699,7 +699,7 @@ class InteractiveService( Service ):
         return self.onStartup()
 
     def _getCallbackKey( self, cbName ):
-        return hashlib.md5( f"{self._originSecret}/{cbName}".encode() ).hexdigest()[ : 8 ]
+        return hashlib.md5( ( "%s/%s" % ( self._originSecret, cbName ) ).encode() ).hexdigest()[ : 8 ]
 
     def _interactiveOnDetection( self, lc, oid, request ):
         # If the detect does not have the root investigation id
@@ -714,7 +714,7 @@ class InteractiveService( Service ):
 
         callback = self._callbackHashes.get( callbackId, None )
         if callback is None:
-            self.logCritical( f"Unknown callback: {callbackId}" )
+            self.logCritical( "Unknown callback: %s" % ( callbackId, ) )
             return False
 
         job = None
@@ -792,13 +792,15 @@ class InteractiveService( Service ):
                 jobId = ''
                 if job is not None:
                     jobId = job.getId()
-                return sensor.task( cmd, inv_id = f"{this._rootInvestigationId}/{cbHash}/{jobId}/{ctx}" )
+                return sensor.task( cmd, inv_id = "%s/%s/%s/%s" % ( this._rootInvestigationId, cbHash, jobId, ctx ) )
 
         class _interactiveManager( limacharlie.Manager ):
             def sensor( self, sid, inv_id = None ):
                 s = _interactiveSensor( self, sid )
                 if inv_id is not None:
                     s.setInvId( inv_id )
+                elif self._inv_id is not None:
+                    s.setInvId( self._inv_id )
                 return s
 
         return _interactiveManager( *args, **kwargs )

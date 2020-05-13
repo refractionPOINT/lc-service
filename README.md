@@ -318,7 +318,9 @@ This dictionary should be of the form `param_name => { type, desc }`. These defi
 will be used by LimaCharlie to construct simplified request user interfaces to your service.
 Your service should still do full validation of parameters passed to it.
 
-The `type` is one of `int`, `float`, `str`, `bool`.
+The `type` is one of `int`, `float`, `str`, `bool` or `enum`.
+
+If the `type` is `enum`, another key `values` must be present and be a list of possible values.
 
 The `desc` should be a short description of the purpose and interpretation of the parameter.
 
@@ -326,8 +328,12 @@ Example for a fictional payload detonation service:
 ```json
 {
   "action": {
-    "type": "str",
-    "desc": "the action to take, one of 'set' or 'get'.",
+    "type": "enum",
+    "values": [
+        "get",
+        "set"
+    ],
+    "desc": "the action to take.",
   },
   "api_key": {
     "type": "str",
