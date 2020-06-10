@@ -103,6 +103,26 @@ class Service( object ):
         expected = hmac.new( self._originSecret, msg = data, digestmod = hashlib.sha256 ).hexdigest()
         return hmac.compare_digest( expected, signature )
 
+    def _validateRequestParameter( self, definition, value ):
+        expectedType = {
+            'int' : int,
+            'str' : str,
+            'bool' : bool,
+            'enum' : definition.get( 'values', None )
+        }.get( definition[ 'type' ], None )
+
+        if expectedType is None:
+            return 'wrong data type'
+
+        if 'enum' == definition[ 'type' ]:
+            if value not in expectedType:
+                return 'enum has invalid value'
+
+        if not isinstance( value, expectedType ):
+            return 'wrong data type'
+
+        return None
+
     def _processEvent( self, data ):
         version = data.get( 'version', None )
         jwt = data.get( 'jwt', None )
@@ -123,6 +143,26 @@ class Service( object ):
             self.log( "REQ (%s): %s => %s" % ( msgId, eType, json.dumps( dataNoJwt ) ) )
 
         request = Request( eType, msgId, data )
+
+        # If the eType is 'request' and the service specifies
+        # some request parameter definitions we'll do some
+        # validation on the parameters.
+        if 'request' == eType and 0 != len( self._supportedRequestParameters ):
+            for k, v in request.data.items():
+                definition = self._supportedRequestParameters.get( k, None) is None
+                if definition is None:
+                    continue
+                validationResult = self._validateRequestParameter( definition, v )
+                if validationResult is None:
+                    continue
+                return self.response( isSuccess = False,
+                                      error = "invalid parameter %s: %s" % ( k, validationResult ) )
+            for k, v in self._supportedRequestParameters.items():
+                if not v.get( 'is_required', False ):
+                    continue
+                if k not in request.data:
+                    return self.response( isSuccess = False,
+                                          error = "missing parameter %s" % ( k, ) )
 
         handler = self._handlers.get( eType, None )
         if handler is None:
