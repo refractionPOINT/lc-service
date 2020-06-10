@@ -1,10 +1,10 @@
 from setuptools import setup
 
-__version__ = "1.7.1"
+__version__ = "1.8.0"
 __author__ = "Maxime Lamothe-Brassard ( Refraction Point, Inc )"
 __author_email__ = "maxime@refractionpoint.com"
 __license__ = "Apache v2"
-__copyright__ = "Copyright (c) 2018 Refraction Point, Inc"
+__copyright__ = "Copyright (c) 2020 Refraction Point, Inc"
 
 setup( name = 'lcservice',
        version = __version__,
