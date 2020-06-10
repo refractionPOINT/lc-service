@@ -108,7 +108,7 @@ class Service( object ):
             'int' : int,
             'str' : str,
             'bool' : bool,
-            'enum' : definition.get( 'values', None )
+            'enum' : definition.get( 'values', None ),
         }.get( definition[ 'type' ], None )
 
         if expectedType is None:
@@ -117,6 +117,8 @@ class Service( object ):
         if 'enum' == definition[ 'type' ]:
             if value not in expectedType:
                 return 'enum has invalid value'
+            else:
+                return None
 
         if not isinstance( value, expectedType ):
             return 'wrong data type'
@@ -149,7 +151,7 @@ class Service( object ):
         # validation on the parameters.
         if 'request' == eType and 0 != len( self._supportedRequestParameters ):
             for k, v in request.data.items():
-                definition = self._supportedRequestParameters.get( k, None) is None
+                definition = self._supportedRequestParameters.get( k, None )
                 if definition is None:
                     continue
                 validationResult = self._validateRequestParameter( definition, v )
