@@ -69,5 +69,87 @@ def test_callback_enabled():
     assert( isSuccess )
     assert( data[ 'test' ] == 42 )
 
+def test_parameters():
+    class _Svc( lcservice.Service ):
+        def onStartup( self ):
+            self.setRequestParameters( {
+                'action' : {
+                    'type' : 'enum',
+                    'values' : [
+                        'cmd1',
+                        'cmd2',
+                    ],
+                    'desc' : 'ccc',
+                    'is_required' : True,
+                },
+                'artifact_id' : {
+                    'type' : 'str',
+                    'desc' : 'bbb.',
+                    'is_required' : True,
+                },
+                'retention' : {
+                    'type' : 'int',
+                    'desc' : 'aaa.',
+                },
+            } )
+
+        def onRequest( self, lc, oid, request ):
+            return True
+
+    svc = _Svc( 'test-service', None )
+
+    # Missing required parameter.
+    resp = svc._processEvent( {
+        'etype' : 'request',
+        'data' : {},
+    } )
+
+    assert( not resp[ 'success' ] )
+
+    # Valid partial.
+    resp = svc._processEvent( {
+        'etype' : 'request',
+        'data' : {
+            'action' : 'cmd1',
+            'artifact_id' : 'zzz'
+        },
+    } )
+
+    assert( resp[ 'success' ] )
+
+    # Invalid type.
+    resp = svc._processEvent( {
+        'etype' : 'request',
+        'data' : {
+            'action' : 'cmd1',
+            'artifact_id' : 33
+        },
+    } )
+
+    assert( not resp[ 'success' ] )
+
+    # Invalid enum.
+    resp = svc._processEvent( {
+        'etype' : 'request',
+        'data' : {
+            'action' : 'nope',
+            'artifact_id' : 'zzz'
+        },
+    } )
+
+    assert( not resp[ 'success' ] )
+
+    # Extra parameters.
+    resp = svc._processEvent( {
+        'etype' : 'request',
+        'data' : {
+            'action' : 'cmd1',
+            'artifact_id' : 'zzz',
+            'ccc' : 'yes'
+        },
+    } )
+
+    assert( resp[ 'success' ] )
+
 if __name__ == '__main__':
     test_create_service()

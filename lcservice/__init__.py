@@ -1,10 +1,10 @@
 """Reference implementation for LimaCharlie.io services."""
 
-__version__ = "1.7.1"
+__version__ = "1.8.0"
 __author__ = "Maxime Lamothe-Brassard ( Refraction Point, Inc )"
 __author_email__ = "maxime@refractionpoint.com"
 __license__ = "Apache v2"
-__copyright__ = "Copyright (c) 2018 Refraction Point, Inc"
+__copyright__ = "Copyright (c) 2020 Refraction Point, Inc"
 
 from .service import Service  # noqa: F401
 from .service import InteractiveService # noqa: F401
