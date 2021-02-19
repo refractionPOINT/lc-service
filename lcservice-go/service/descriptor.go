@@ -1,7 +1,6 @@
 package service
 
 import (
-	"reflect"
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
@@ -68,6 +67,7 @@ type Descriptor struct {
 	Callbacks DescriptorCallbacks
 }
 
+// Optional callbacks available.
 type DescriptorCallbacks struct {
 	OnOrgInstall   ServiceCallback `json:"org_install"`
 	OnOrgUninstall ServiceCallback `json:"org_uninstall"`
@@ -78,6 +78,7 @@ type DescriptorCallbacks struct {
 	OnDeploymentEvent ServiceCallback `json:"deployment_event"`
 	OnLogEvent        ServiceCallback `json:"log_event"`
 
+	// Called once per Org per X time.
 	OnOrgPer1H  ServiceCallback `json:"org_per_1h"`
 	OnOrgPer3H  ServiceCallback `json:"org_per_3h"`
 	OnOrgPer12H ServiceCallback `json:"org_per_12h"`
@@ -85,6 +86,7 @@ type DescriptorCallbacks struct {
 	OnOrgPer7D  ServiceCallback `json:"org_per_7d"`
 	OnOrgPer30D ServiceCallback `json:"org_per_30d"`
 
+	// Called once per X time.
 	OnOncePer1H  ServiceCallback `json:"once_per_1h"`
 	OnOncePer3H  ServiceCallback `json:"once_per_3h"`
 	OnOncePer12H ServiceCallback `json:"once_per_12h"`
@@ -92,6 +94,7 @@ type DescriptorCallbacks struct {
 	OnOncePer7D  ServiceCallback `json:"once_per_7d"`
 	OnOncePer30D ServiceCallback `json:"once_per_30d"`
 
+	// Called once per sensor per X time.
 	OnSensorPer1H  ServiceCallback `json:"sensor_per_1h"`
 	OnSensorPer3H  ServiceCallback `json:"sensor_per_3h"`
 	OnSensorPer12H ServiceCallback `json:"sensor_per_12h"`
@@ -102,27 +105,4 @@ type DescriptorCallbacks struct {
 	OnNewSensor ServiceCallback `json:"new_sensor"`
 
 	OnServiceError ServiceCallback `json:"service_error"`
-}
-
-func (cb DescriptorCallbacks) getSupported() []string {
-	t := reflect.TypeOf(cb)
-
-	// Already include some static callbacks provided
-	// by the coreService.
-	names := []string{
-		"health",
-	}
-
-	for i := 0; i < t.NumField(); i++ {
-		if reflect.ValueOf(cb).Field(i).IsNil() {
-			continue
-		}
-		f := t.Field(i)
-		cbName, ok := f.Tag.Lookup("json")
-		if !ok {
-			panic("callback with unknown name")
-		}
-		names = append(names, cbName)
-	}
-	return names
 }

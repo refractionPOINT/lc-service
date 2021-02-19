@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"sync/atomic"
 	"time"
 
@@ -21,6 +22,8 @@ type coreService struct {
 
 	callsInProgress uint32
 	startedAt       int64
+
+	cbMap map[string]ServiceCallback
 }
 
 type lcRequest struct {
@@ -47,6 +50,8 @@ func NewService(descriptor Descriptor) (*coreService, error) {
 	if cs.desc.RequestParameters == nil {
 		cs.desc.RequestParameters = map[string]RequestParamDef{}
 	}
+	cs.cbMap = cs.buildCallbackMap()
+
 	return cs, nil
 }
 
@@ -149,21 +154,15 @@ func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 }
 
 func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
-	switch reqType {
-	case "health":
-		return cs.cbHealth, true
-	case "org_install":
-		return cs.desc.Callbacks.OnOrgInstall, cs.desc.Callbacks.OnOrgInstall != nil
-	case "org_uninstall":
-		return cs.desc.Callbacks.OnOrgUninstall, cs.desc.Callbacks.OnOrgUninstall != nil
-	case "request":
-		return cs.desc.Callbacks.OnRequest, cs.desc.Callbacks.OnRequest != nil
-	default:
-		return nil, false
-	}
+	cb, ok := cs.cbMap[reqType]
+	return cb, ok
 }
 
 func (cs *coreService) cbHealth(r Request) Response {
+	cbSupported := []string{}
+	for k := range cs.cbMap {
+		cbSupported = append(cbSupported, k)
+	}
 	return Response{
 		IsSuccess: true,
 		Data: Dict{
@@ -172,9 +171,34 @@ func (cs *coreService) cbHealth(r Request) Response {
 			"calls_in_progress": cs.callsInProgress,
 			"mtd": Dict{
 				"detect_subscriptions": cs.desc.DetectionsSubscribed,
-				"callbacks":            cs.desc.Callbacks.getSupported(),
+				"callbacks":            cbSupported,
 				"request_params":       cs.desc.RequestParameters,
 			},
 		},
 	}
+}
+
+func (cs *coreService) buildCallbackMap() map[string]ServiceCallback {
+	cb := cs.desc.Callbacks
+	t := reflect.TypeOf(cb)
+
+	// Already include some static callbacks provided
+	// by the coreService.
+	cbMap := map[string]ServiceCallback{
+		"health": cs.cbHealth,
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		v := reflect.ValueOf(cb).Field(i)
+		if v.IsNil() {
+			continue
+		}
+		f := t.Field(i)
+		cbName, ok := f.Tag.Lookup("json")
+		if !ok {
+			panic("callback with unknown name")
+		}
+		cbMap[cbName] = v.Interface().(ServiceCallback)
+	}
+	return cbMap
 }
