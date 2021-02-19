@@ -71,7 +71,37 @@ type Descriptor struct {
 type DescriptorCallbacks struct {
 	OnOrgInstall   ServiceCallback `json:"org_install"`
 	OnOrgUninstall ServiceCallback `json:"org_uninstall"`
-	OnRequest      ServiceCallback `json:"request"`
+
+	OnDetection       ServiceCallback `json:"detection"`
+	OnRequest         ServiceCallback `json:"request"`
+	OnGetResource     ServiceCallback `json:"get_resource"`
+	OnDeploymentEvent ServiceCallback `json:"deployment_event"`
+	OnLogEvent        ServiceCallback `json:"log_event"`
+
+	OnOrgPer1H  ServiceCallback `json:"org_per_1h"`
+	OnOrgPer3H  ServiceCallback `json:"org_per_3h"`
+	OnOrgPer12H ServiceCallback `json:"org_per_12h"`
+	OnOrgPer24H ServiceCallback `json:"org_per_24h"`
+	OnOrgPer7D  ServiceCallback `json:"org_per_7d"`
+	OnOrgPer30D ServiceCallback `json:"org_per_30d"`
+
+	OnOncePer1H  ServiceCallback `json:"once_per_1h"`
+	OnOncePer3H  ServiceCallback `json:"once_per_3h"`
+	OnOncePer12H ServiceCallback `json:"once_per_12h"`
+	OnOncePer24H ServiceCallback `json:"once_per_24h"`
+	OnOncePer7D  ServiceCallback `json:"once_per_7d"`
+	OnOncePer30D ServiceCallback `json:"once_per_30d"`
+
+	OnSensorPer1H  ServiceCallback `json:"sensor_per_1h"`
+	OnSensorPer3H  ServiceCallback `json:"sensor_per_3h"`
+	OnSensorPer12H ServiceCallback `json:"sensor_per_12h"`
+	OnSensorPer24H ServiceCallback `json:"sensor_per_24h"`
+	OnSensorPer7D  ServiceCallback `json:"sensor_per_7d"`
+	OnSensorPer30D ServiceCallback `json:"sensor_per_30d"`
+
+	OnNewSensor ServiceCallback `json:"new_sensor"`
+
+	OnServiceError ServiceCallback `json:"service_error"`
 }
 
 func (cb DescriptorCallbacks) getSupported() []string {
