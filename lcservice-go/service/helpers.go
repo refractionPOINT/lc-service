@@ -2,7 +2,9 @@ package service
 
 import "encoding/json"
 
-func DictToStruct(d map[string]interface{}, s interface{}) error {
+type Dict = map[string]interface{}
+
+func DictToStruct(d Dict, s interface{}) error {
 	b, err := json.Marshal(d)
 	if err != nil {
 		return err
@@ -14,9 +16,9 @@ func DictToStruct(d map[string]interface{}, s interface{}) error {
 }
 
 func NewErrorResponse(err string) Response {
-	return Response{Data: map[string]interface{}{"error": err}}
+	return Response{Data: Dict{"error": err}}
 }
 
 func NewRetriableResponse(err string) Response {
-	return Response{IsRetriable: true, Data: map[string]interface{}{"error": err}}
+	return Response{IsRetriable: true, Data: Dict{"error": err}}
 }

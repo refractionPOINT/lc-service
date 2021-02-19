@@ -1,6 +1,7 @@
 package service
 
 import (
+	"reflect"
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
@@ -17,15 +18,15 @@ type Request struct {
 type RequestEvent struct {
 	Type string
 	ID   string
-	Data map[string]interface{}
+	Data Dict
 }
 
 type Response struct {
-	IsSuccess   bool                   `json:"success"`
-	IsRetriable bool                   `json:"retry,omitempty"`
-	Error       string                 `json:"error,omitempty"`
-	Data        map[string]interface{} `json:"data"`
-	Jobs        []*Job                 `json:"jobs,omitempty"`
+	IsSuccess   bool   `json:"success"`
+	IsRetriable bool   `json:"retry,omitempty"`
+	Error       string `json:"error,omitempty"`
+	Data        Dict   `json:"data"`
+	Jobs        []*Job `json:"jobs,omitempty"`
 }
 
 type ServiceCallback = func(Request) Response
@@ -56,12 +57,42 @@ type Descriptor struct {
 	// Supported requests
 	RequestParameters map[RequestParamName]RequestParamDef
 
+	// Detections to subscribe to
+	DetectionsSubscribed []string
+
 	// General purpose
 	Log         func(msg string)
 	LogCritical func(msg string)
 
 	// Callbacks
-	OnOrgInstall   ServiceCallback
-	OnOrgUninstall ServiceCallback
-	OnRequest      ServiceCallback
+	Callbacks DescriptorCallbacks
+}
+
+type DescriptorCallbacks struct {
+	OnOrgInstall   ServiceCallback `json:"org_install"`
+	OnOrgUninstall ServiceCallback `json:"org_uninstall"`
+	OnRequest      ServiceCallback `json:"request"`
+}
+
+func (cb DescriptorCallbacks) getSupported() []string {
+	t := reflect.TypeOf(cb)
+
+	// Already include some static callbacks provided
+	// by the coreService.
+	names := []string{
+		"health",
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		if reflect.ValueOf(cb).Field(i).IsNil() {
+			continue
+		}
+		f := t.Field(i)
+		cbName, ok := f.Tag.Lookup("json")
+		if !ok {
+			panic("callback with unknown name")
+		}
+		names = append(names, cbName)
+	}
+	return names
 }

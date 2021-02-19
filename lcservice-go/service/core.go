@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
@@ -17,23 +18,34 @@ const (
 
 type coreService struct {
 	desc Descriptor
+
+	callsInProgress uint32
+	startedAt       int64
 }
 
 type lcRequest struct {
-	Version  int                    `json:"version"`
-	JWT      string                 `json:"jwt"`
-	OID      string                 `json:"oid"`
-	MsgID    string                 `json:"mid"`
-	Deadline int64                  `json:"deadline"`
-	Type     string                 `json:"etype"`
-	Data     map[string]interface{} `json:"data"`
+	Version  int    `json:"version"`
+	JWT      string `json:"jwt"`
+	OID      string `json:"oid"`
+	MsgID    string `json:"mid"`
+	Deadline int64  `json:"deadline"`
+	Type     string `json:"etype"`
+	Data     Dict   `json:"data"`
 }
 
 var ErrNotImplemented = NewErrorResponse("not implemented")
 
 func NewService(descriptor Descriptor) (*coreService, error) {
 	cs := &coreService{
-		desc: descriptor,
+		desc:      descriptor,
+		startedAt: time.Now().Unix(),
+	}
+	// Initialize some of the values we prefer to be ready.
+	if cs.desc.DetectionsSubscribed == nil {
+		cs.desc.DetectionsSubscribed = []string{}
+	}
+	if cs.desc.RequestParameters == nil {
+		cs.desc.RequestParameters = map[string]RequestParamDef{}
 	}
 	return cs, nil
 }
@@ -42,7 +54,11 @@ func (cs *coreService) Init() error {
 	return nil
 }
 
-func (cs *coreService) ProcessRequest(data map[string]interface{}, sig string) (response interface{}, isAccepted bool) {
+func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
+	atomic.AddUint32(&cs.callsInProgress, 1)
+	defer func() {
+		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
+	}()
 	// Validate the HMAC signature.
 	var err error
 	if !cs.verifyOrigin(data, sig) {
@@ -64,7 +80,7 @@ func (cs *coreService) ProcessRequest(data map[string]interface{}, sig string) (
 	// Check we can work with this version of the protocol.
 	if req.Version > PROTOCOL_VERSION {
 		return Response{
-			Data: map[string]interface{}{"error": fmt.Sprintf("unsupported version (> %s)", PROTOCOL_VERSION)},
+			Data: Dict{"error": fmt.Sprintf("unsupported version (> %d)", PROTOCOL_VERSION)},
 		}, true
 	}
 
@@ -73,9 +89,12 @@ func (cs *coreService) ProcessRequest(data map[string]interface{}, sig string) (
 	}
 
 	// Check if we're still within the deadline.
-	deadline := time.Unix(req.Deadline, 0)
-	if time.Now().After(deadline) {
-		return NewErrorResponse("deadline exceeded"), true
+	deadline := time.Time{}
+	if req.Deadline != 0 {
+		deadline := time.Unix(req.Deadline, 0)
+		if time.Now().After(deadline) {
+			return NewErrorResponse("deadline exceeded"), true
+		}
 	}
 
 	serviceRequest := Request{
@@ -114,7 +133,7 @@ func (cs *coreService) ProcessRequest(data map[string]interface{}, sig string) (
 	return resp, true
 }
 
-func (cs *coreService) verifyOrigin(data map[string]interface{}, sig string) bool {
+func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 	d, err := json.Marshal(data)
 	if err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.json.Marshal: %v", err))
@@ -134,16 +153,28 @@ func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
 	case "health":
 		return cs.cbHealth, true
 	case "org_install":
-		return cs.desc.OnOrgInstall, cs.desc.OnOrgInstall != nil
+		return cs.desc.Callbacks.OnOrgInstall, cs.desc.Callbacks.OnOrgInstall != nil
 	case "org_uninstall":
-		return cs.desc.OnOrgUninstall, cs.desc.OnOrgUninstall != nil
+		return cs.desc.Callbacks.OnOrgUninstall, cs.desc.Callbacks.OnOrgUninstall != nil
 	case "request":
-		return cs.desc.OnRequest, cs.desc.OnRequest != nil
+		return cs.desc.Callbacks.OnRequest, cs.desc.Callbacks.OnRequest != nil
 	default:
 		return nil, false
 	}
 }
 
 func (cs *coreService) cbHealth(r Request) Response {
-	return Response{}
+	return Response{
+		IsSuccess: true,
+		Data: Dict{
+			"version":           PROTOCOL_VERSION,
+			"start_time":        cs.startedAt,
+			"calls_in_progress": cs.callsInProgress,
+			"mtd": Dict{
+				"detect_subscriptions": cs.desc.DetectionsSubscribed,
+				"callbacks":            cs.desc.Callbacks.getSupported(),
+				"request_params":       cs.desc.RequestParameters,
+			},
+		},
+	}
 }
