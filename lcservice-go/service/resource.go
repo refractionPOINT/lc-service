@@ -53,9 +53,11 @@ func (re RequestEvent) AsResourceRequest() (ResourceRequest, error) {
 }
 
 // Load a ResourceResponse struct from a literal buffer.
-func (rs *ResourceResponse) FromData(category string, data []byte) *ResourceResponse {
+func NewResourceFromData(category string, data []byte) *ResourceResponse {
+	rs := &ResourceResponse{}
 	rs.Category = category
-	rs.Hash = hex.EncodeToString(sha256.New().Sum(data))
+	h := sha256.Sum256(data)
+	rs.Hash = hex.EncodeToString(h[:])
 	rs.Data = base64.StdEncoding.EncodeToString(data)
 	return rs
 }
@@ -90,10 +92,9 @@ func (rr ResourceRequest) SupplyResponse(resources map[string]*ResourceResponse)
 			}
 		}
 		res := Dict{}
-		found := Dict{}
-		foundName := ""
 		for k, v := range resources {
-			foundName = k
+			found := Dict{}
+			foundName := k
 			found["hash"] = v.Hash
 			found["res_cat"] = v.Category
 			if rr.inIncludeData {
