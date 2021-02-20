@@ -1,6 +1,6 @@
-FROM python:3.8-alpine
+FROM python:3.8-slim
 
-RUN apk update && apk add alpine-sdk && apk add libffi-dev && pip install gevent && apk del alpine-sdk && apk del libffi-dev
+RUN pip install gevent
 
 # Install base library.
 ADD . /lc-service
