@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"sort"
 	"sync/atomic"
 	"time"
 
@@ -163,6 +164,7 @@ func (cs *coreService) cbHealth(r Request) Response {
 	for k := range cs.cbMap {
 		cbSupported = append(cbSupported, k)
 	}
+	sort.StringSlice(cbSupported).Sort()
 	return Response{
 		IsSuccess: true,
 		Data: Dict{

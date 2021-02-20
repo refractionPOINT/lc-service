@@ -152,7 +152,7 @@ func TestResourceConvertion(t *testing.T) {
 	// Single resource request
 	r, err := RequestEvent{
 		Data: Dict{
-			"resource": "test1",
+			"resource":        "test1",
 			"is_include_data": true,
 		},
 	}.AsResourceRequest()
@@ -172,7 +172,7 @@ func TestResourceConvertion(t *testing.T) {
 	// Multi resource request
 	r, err = RequestEvent{
 		Data: Dict{
-			"resource": []string{"test1", "test2"},
+			"resource":        []string{"test1", "test2"},
 			"is_include_data": true,
 		},
 	}.AsResourceRequest()
@@ -215,7 +215,7 @@ func TestResourceSupply(t *testing.T) {
 	// Single resource
 	r, err := RequestEvent{
 		Data: Dict{
-			"resource": []string{"test1", "test2"},
+			"resource":        []string{"test1", "test2"},
 			"is_include_data": true,
 		},
 	}.AsResourceRequest()
@@ -237,7 +237,7 @@ func TestResourceSupply(t *testing.T) {
 	// Multi resource
 	r, err = RequestEvent{
 		Data: Dict{
-			"resource": "test1",
+			"resource":        "test1",
 			"is_include_data": true,
 		},
 	}.AsResourceRequest()
