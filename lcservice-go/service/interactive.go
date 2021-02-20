@@ -3,6 +3,7 @@ package service
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -53,10 +54,19 @@ type InteractiveRequest struct {
 	OID     string
 	Event   Dict
 	Job     *Job
-	Context string
+	Context Dict
 }
 
 type InteractiveCallback = func(InteractiveRequest) Response
+
+// Canonical format for context passing
+// between Services and LimaCharlie.
+type interactiveContext struct {
+	SessionID  string `json:"si"`
+	CallbackID string `json:"cb"`
+	JobID      string `json:"j"`
+	Context    Dict   `json:"c"`
+}
 
 type inboundDetection struct {
 	Detect  Dict `json:"detect"`
@@ -125,8 +135,8 @@ func (is *interactiveService) onDetection(r Request) Response {
 		// Pass through to user.
 		return is.originalOnDetection(r)
 	}
-	components := strings.SplitN(detection.Routing.InvestigationID, "/", 4)
-	if len(components) != 4 {
+	ic, isICValid := parseInteractiveContext(detection.Routing.InvestigationID)
+	if !isICValid {
 		// Pass through to user.
 		return is.originalOnDetection(r)
 	}
@@ -134,28 +144,38 @@ func (is *interactiveService) onDetection(r Request) Response {
 		Org:     r.Org,
 		OID:     r.OID,
 		Event:   detection.Detect,
-		Context: components[3],
+		Context: ic.Context,
 	}
 
-	jobID := components[2]
-	if jobID != "" {
-		req.Job = NewJob(jobID)
+	if ic.JobID != "" {
+		req.Job = NewJob(ic.JobID)
 	}
 
 	// Get the right callback.
-	callbackID := components[1]
-	if callbackID == "" {
+	if ic.CallbackID == "" {
 		is.cs.desc.LogCritical(fmt.Sprintf("received interactive callback without callbackID: %s", detection.Routing.InvestigationID))
 		return is.originalOnDetection(r)
 	}
 
-	cb, ok := is.interactiveCallbacks[callbackID]
+	cb, ok := is.interactiveCallbacks[ic.CallbackID]
 	if !ok {
 		is.cs.desc.LogCritical(fmt.Sprintf("received interactive callback with unknown callbackID: %s", detection.Routing.InvestigationID))
 		return is.originalOnDetection(r)
 	}
 
 	return cb(req)
+}
+
+func parseInteractiveContext(invID string) (interactiveContext, bool) {
+	ic := interactiveContext{}
+	components := strings.SplitN(invID, "/", 2)
+	if len(components) != 2 {
+		return ic, false
+	}
+	if err := json.Unmarshal([]byte(components[1]), &ic); err != nil {
+		return ic, false
+	}
+	return ic, true
 }
 
 func (is *interactiveService) onOrgPer1H(r Request) Response {

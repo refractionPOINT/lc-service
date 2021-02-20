@@ -126,10 +126,10 @@ func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface
 	}
 
 	// Create an SDK instance.
-	if serviceRequest.Org, err = lc.NewOrganization(lc.ClientOptions{
+	if serviceRequest.Org, err = lc.NewOrganizationFromClientOptions(lc.ClientOptions{
 		OID: req.OID,
 		JWT: req.JWT,
-	}); err != nil {
+	}, cs); err != nil {
 		return NewErrorResponse(err.Error()), true
 	}
 
@@ -203,4 +203,42 @@ func (cs *coreService) buildCallbackMap() map[string]ServiceCallback {
 		cbMap[cbName] = v.Interface().(ServiceCallback)
 	}
 	return cbMap
+}
+
+// LC.Logger Interface Compatibility
+func (cs coreService) Fatal(msg string) {
+	if cs.desc.LogCritical == nil {
+		return
+	}
+	cs.desc.LogCritical(msg)
+}
+func (cs coreService) Error(msg string) {
+	if cs.desc.LogCritical == nil {
+		return
+	}
+	cs.desc.LogCritical(msg)
+}
+func (cs coreService) Warn(msg string) {
+	if cs.desc.LogCritical == nil {
+		return
+	}
+	cs.desc.LogCritical(msg)
+}
+func (cs coreService) Info(msg string) {
+	if cs.desc.Log == nil {
+		return
+	}
+	cs.desc.Log(msg)
+}
+func (cs coreService) Debug(msg string) {
+	if cs.desc.Log == nil {
+		return
+	}
+	cs.desc.Log(msg)
+}
+func (cs coreService) Trace(msg string) {
+	if cs.desc.Log == nil {
+		return
+	}
+	cs.desc.Log(msg)
 }
