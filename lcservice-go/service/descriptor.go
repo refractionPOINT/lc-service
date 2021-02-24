@@ -47,6 +47,13 @@ type RequestParamDef struct {
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
+const (
+	RequestParamTypeString = "str"
+	RequestParamTypeEnum   = "enum"
+	RequestParamTypeInt    = "int"
+	RequestParamTypeBool   = "bool"
+)
+
 type Descriptor struct {
 	// Basic info
 	Name      string
