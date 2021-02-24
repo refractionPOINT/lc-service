@@ -37,10 +37,11 @@ type ServiceCallback = func(Request) Response
 // should be done at runtime. You may use the
 // helper function `DictToStruct` for this purpose.
 type RequestParamName = string
+type RequestParamType = string
 type RequestParamDef struct {
-	Type        string `json:"type"`
-	Description string `json:"desc"`
-	IsRequired  bool   `json:"is_required"`
+	Type        RequestParamType `json:"type"`
+	Description string           `json:"desc"`
+	IsRequired  bool             `json:"is_required"`
 
 	// Only for "enum" Type
 	Values []string `json:"values"`
