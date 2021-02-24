@@ -55,6 +55,13 @@ const (
 	RequestParamTypeBool   = "bool"
 )
 
+var allowedRequestParamTypes = map[string]struct{}{
+	RequestParamTypeString: {},
+	RequestParamTypeEnum:   {},
+	RequestParamTypeInt:    {},
+	RequestParamTypeBool:   {},
+}
+
 type Descriptor struct {
 	// Basic info
 	Name      string
