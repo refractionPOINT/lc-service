@@ -13,6 +13,8 @@ github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210216163349-0bdd
 github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210216163349-0bddaf751817/go.mod h1:cF6Yi0di+HEV7mM5qYhNXz4n7fT+WwWvaHEoP2+Wyvg=
 github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210219192005-89c4228d7770 h1:lJUpPGqNHxVO7XO+gB2XhKkpkK6LsBeaTaChp9afonM=
 github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210219192005-89c4228d7770/go.mod h1:EoshFrzawsMdzMWsZLCWNlsCYiHl4Du8D60/1i9wUR4=
+github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210224172959-359f25a76145 h1:TZRoWBDUr9ZNGcEmNB36I0F3VKsRicwpIOAzVOHkflI=
+github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210224172959-359f25a76145/go.mod h1:EoshFrzawsMdzMWsZLCWNlsCYiHl4Du8D60/1i9wUR4=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/zerolog v1.20.0 h1:38k9hgtUBdxFwE34yS8rTHmHBa4eN16E4DJlv177LNs=
 github.com/rs/zerolog v1.20.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=

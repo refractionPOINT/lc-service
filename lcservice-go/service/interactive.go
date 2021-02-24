@@ -16,20 +16,21 @@ import (
 
 const (
 	interactiveRuleTemplate = `
-namespace: replicant
-detect:
-  op: and
-  rules:
-    - op: starts with
-      path: routing/investigation_id
-      value: %s
-    - op: is
-      not: true
-      path: routing/event_type
-      value: CLOUD_NOTIFICATION
-respond:
-  - action: report
-    name: __%s`
+%s:
+  namespace: replicant
+  detect:
+    op: and
+    rules:
+      - op: starts with
+        path: routing/investigation_id
+        value: %s
+      - op: is
+        not: true
+        path: routing/event_type
+        value: CLOUD_NOTIFICATION
+  respond:
+    - action: report
+      name: __%s`
 )
 
 type interactiveService struct {
@@ -81,8 +82,9 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 	// Install a D&R rule and a Detection subscription.
 	is.detectionName = fmt.Sprintf("svc-%s-ex", descriptor.Name)
 	is.interactiveRule = map[string]lc.CoreDRRule{}
-	if err := yaml.Unmarshal([]byte(fmt.Sprintf(interactiveRuleTemplate, is.detectionName, is.detectionName)), &is.interactiveRule); err != nil {
-		panic("error parsing interactive rule")
+	templatedRule := fmt.Sprintf(interactiveRuleTemplate, is.detectionName, is.detectionName, is.detectionName)
+	if err := yaml.Unmarshal([]byte(templatedRule), &is.interactiveRule); err != nil {
+		panic(fmt.Sprintf("error parsing interactive rule (%v): %s", err, templatedRule))
 	}
 	descriptor.DetectionsSubscribed = append(descriptor.DetectionsSubscribed, is.detectionName)
 
@@ -113,6 +115,7 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 func (is *interactiveService) Init() error {
 	return is.cs.Init()
 }
+
 func (is *interactiveService) ProcessRequest(data map[string]interface{}, sig string) (response interface{}, isAccepted bool) {
 	return is.cs.ProcessRequest(data, sig)
 }

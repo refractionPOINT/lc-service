@@ -1,17 +1,24 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 )
 
-func TestInteractiveHealth(t *testing.T) {
+func TestInteractive(t *testing.T) {
 	params := map[string]RequestParamDef{"p1": {
 		Type:        "enum",
 		Description: "ddd",
 		IsRequired:  true,
 		Values:      []string{"v1", "v2"},
 	}}
+	testCB := func(r InteractiveRequest) Response {
+		if _, ok := r.Event["a"]; ok {
+			return Response{IsSuccess: true, Data: Dict{"yes": 1}}
+		}
+		return Response{IsSuccess: false}
+	}
 	s, err := NewInteractiveService(Descriptor{
 		Name:        "testService",
 		SecretKey:   testSecretKey,
@@ -24,7 +31,7 @@ func TestInteractiveHealth(t *testing.T) {
 		},
 		DetectionsSubscribed: []string{"d1", "d2"},
 		RequestParameters:    params,
-	}, []InteractiveCallback{})
+	}, []InteractiveCallback{testCB})
 	if err != nil {
 		t.Errorf("NewInteractiveService: %v", err)
 	}
@@ -59,6 +66,50 @@ func TestInteractiveHealth(t *testing.T) {
 				"detect_subscriptions": []string{"d1", "d2", "svc-testService-ex"},
 				"callbacks":            []string{"detection", "health", "org_install", "org_per_1h", "org_uninstall"},
 			},
+		},
+	}) {
+		t.Errorf("unexpected: %+v", r)
+	}
+
+	// Make a request to callback.
+	cbHash := s.getCbHash(testCB)
+	iContext, err := json.Marshal(interactiveContext{
+		CallbackID: cbHash,
+		Context: Dict{
+			"some": "ctx",
+		},
+	})
+	if err != nil {
+		t.Errorf("json.Marshal: %v", err)
+	}
+	testData = makeRequest(lcRequest{
+		Version:  1,
+		JWT:      "",
+		OID:      "",
+		MsgID:    "",
+		Deadline: 0,
+		Type:     "detection",
+		Data: Dict{
+			"detect": Dict{
+				"a": "yes",
+			},
+			"routing": Dict{
+				"investigation_id": fmt.Sprintf("%s/%s", s.detectionName, iContext),
+			},
+		},
+	})
+	sig = computeSig(testData)
+
+	resp, isAccepted = s.ProcessRequest(testData, sig)
+	if !isAccepted {
+		t.Error("valid sig not accepted")
+	}
+	r = resp.(Response)
+
+	if !compareResponses(r, Response{
+		IsSuccess: true,
+		Data: Dict{
+			"yes": 1,
 		},
 	}) {
 		t.Errorf("unexpected: %+v", r)
