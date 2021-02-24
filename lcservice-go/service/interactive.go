@@ -37,7 +37,7 @@ type interactiveService struct {
 
 	// Rule used to get responses back.
 	detectionName   string
-	interactiveRule Dict
+	interactiveRule map[string]lc.CoreDRRule
 
 	// Original user-defined callbacks
 	// that we need to overload.
@@ -80,6 +80,7 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 
 	// Install a D&R rule and a Detection subscription.
 	is.detectionName = fmt.Sprintf("svc-%s-ex", descriptor.Name)
+	is.interactiveRule = map[string]lc.CoreDRRule{}
 	if err := yaml.Unmarshal([]byte(fmt.Sprintf(interactiveRuleTemplate, is.detectionName, is.detectionName)), &is.interactiveRule); err != nil {
 		panic("error parsing interactive rule")
 	}
@@ -179,13 +180,13 @@ func parseInteractiveContext(invID string) (interactiveContext, bool) {
 }
 
 func (is *interactiveService) onOrgPer1H(r Request) Response {
-	is.applyInteractiveRule()
+	is.applyInteractiveRule(r.Org)
 
 	return is.originalOnOrgPer1H(r)
 }
 
 func (is *interactiveService) onOrgInstall(r Request) Response {
-	is.applyInteractiveRule()
+	is.applyInteractiveRule(r.Org)
 
 	return is.originalOnOrgInstall(r)
 }
@@ -196,6 +197,15 @@ func (is *interactiveService) onOrgUninstall(r Request) Response {
 	return is.originalOnOrgUninstall(r)
 }
 
-func (is *interactiveService) applyInteractiveRule() {
-	// TODO apply rules
+func (is *interactiveService) applyInteractiveRule(org *lc.Organization) error {
+	c := lc.OrgConfig{
+		DRRules: is.interactiveRule,
+	}
+	if _, err := org.SyncPush(c, lc.SyncOptions{
+		SyncDRRules: true,
+	}); err != nil {
+		is.cs.desc.LogCritical(fmt.Sprintf("error syncing interactive rule: %v", err))
+		return err
+	}
+	return nil
 }
