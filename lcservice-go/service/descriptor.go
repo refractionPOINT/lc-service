@@ -47,6 +47,14 @@ type RequestParamDef struct {
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
+type CommandNamespace string
+type CommandName string
+type CommandRequest struct {
+	Namespace     CommandNamespace `json:"namespace"`
+	Name          CommandName      `json:"name"`
+	RequestParams RequestParams    `json:"params"`
+}
+
 type Descriptor struct {
 	// Basic info
 	Name      string
@@ -65,6 +73,9 @@ type Descriptor struct {
 
 	// Callbacks
 	Callbacks DescriptorCallbacks
+
+	// Commands
+	Commands map[CommandName]CommandRequest
 }
 
 // Optional callbacks available.
