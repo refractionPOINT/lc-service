@@ -53,14 +53,8 @@ const (
 	RequestParamTypeEnum   = "enum"
 	RequestParamTypeInt    = "int"
 	RequestParamTypeBool   = "bool"
+	RequestParamTypeFlag   = "flag"
 )
-
-var allowedRequestParamTypes = map[string]struct{}{
-	RequestParamTypeString: {},
-	RequestParamTypeEnum:   {},
-	RequestParamTypeInt:    {},
-	RequestParamTypeBool:   {},
-}
 
 type Descriptor struct {
 	// Basic info
@@ -82,7 +76,7 @@ type Descriptor struct {
 	Callbacks DescriptorCallbacks
 
 	// Commands
-	Commands map[CommandName]Command
+	// Commands CommandsDescriptor
 }
 
 // Optional callbacks available.
