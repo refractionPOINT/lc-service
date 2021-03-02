@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -254,4 +256,53 @@ func TestResourceSupply(t *testing.T) {
 	if fmt.Sprintf("%+v", resp) != `{IsSuccess:true IsRetriable:false Error: Data:map[hash:5b41362bc82b7f3d56edc5a306db22105707d01ff4819e26faef9724a2d406c9 res_cat:lookup res_data:ZGF0YTE=] Jobs:[]}` {
 		t.Errorf("unexpected supply: %+v", resp)
 	}
+}
+
+func TestCommand(t *testing.T) {
+	a := assert.New(t)
+	testCommandOneCB := func(req Request) Response {
+		return Response{IsSuccess: true, Data: Dict{"from": "cbOne"}}
+	}
+	testCommandTwoCB := func(req Request) Response {
+		return Response{IsSuccess: true, Data: Dict{"from": "cbTwo"}}
+	}
+	s, err := NewService(Descriptor{
+		SecretKey:   testSecretKey,
+		Log:         func(m string) { fmt.Println(m) },
+		LogCritical: func(m string) { fmt.Println(m) },
+		Commands: CommandsDescriptor{
+			[]commandDescriptor{
+				{
+					Name:    "commandOne",
+					handler: testCommandOneCB,
+				},
+				{
+					Name:    "commandTwo",
+					handler: testCommandTwoCB,
+				},
+			},
+		},
+	})
+	a.NoError(err)
+	a.NotNil(s)
+
+	testData := makeRequest(lcRequest{
+		Version: 1,
+		Type:    "commandOne",
+	})
+	sig := computeSig(testData)
+	resp, accepted := s.ProcessCommand(testData, sig)
+	a.True(accepted)
+	r := resp.(Response)
+	a.Equal(Dict{"from": "cbOne"}, r.Data)
+
+	testData = makeRequest(lcRequest{
+		Version: 1,
+		Type:    "commandTwo",
+	})
+	sig = computeSig(testData)
+	resp, accepted = s.ProcessCommand(testData, sig)
+	a.True(accepted)
+	r = resp.(Response)
+	a.Equal(Dict{"from": "cbTwo"}, r.Data)
 }
