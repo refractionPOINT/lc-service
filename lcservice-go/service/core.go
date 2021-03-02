@@ -60,6 +60,74 @@ func (cs *coreService) Init() error {
 	return nil
 }
 
+func (cs *coreService) ProcessCommand(data Dict, sig string) (interface{}, bool) {
+	atomic.AddUint32(&cs.callsInProgress, 1)
+	defer func() {
+		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
+	}()
+	// Validate the HMAC signature.
+	if !cs.verifyOrigin(data, sig) {
+		// This is the only special case where
+		// we return isAccepted = false to tell
+		// the parent that the signature is
+		// specifically invalid.
+		return nil, false
+	}
+
+	// Parse the request format.
+	req := lcRequest{}
+	if err := DictToStruct(data, &req); err != nil {
+		return Response{
+			Error: fmt.Sprintf("invalid format: %v", err),
+		}, true
+	}
+
+	// Check we can work with this version of the protocol.
+	if req.Version > PROTOCOL_VERSION {
+		return Response{
+			Data: Dict{"error": fmt.Sprintf("unsupported version (> %d)", PROTOCOL_VERSION)},
+		}, true
+	}
+
+	if cs.desc.IsDebug {
+		cs.desc.Log(fmt.Sprintf("REQ (%s): %s => %+v", req.MsgID, req.Type, req.Data))
+	}
+
+	// Check if we're still within the deadline.
+	deadline := time.Time{}
+	if req.Deadline != 0 {
+		deadline := time.Unix(req.Deadline, 0)
+		if time.Now().After(deadline) {
+			return NewErrorResponse("deadline exceeded"), true
+		}
+	}
+
+	desc, found := cs.getCommandDescriptor(req.Type)
+	if !found {
+		return ErrNotImplemented, true
+	}
+
+	// do args validation
+	parseState := desc.parse(req.Data)
+	if parseState.err != nil {
+		return Response{
+			Error: parseState.err.Error(),
+		}, false
+	}
+
+	request := Request{
+		OID:      req.OID,
+		Deadline: deadline,
+		Event: RequestEvent{
+			Type: req.Type,
+			ID:   req.MsgID,
+			Data: parseState.args,
+		},
+	}
+	resp := desc.handler(request)
+	return resp, true
+}
+
 func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
@@ -157,6 +225,15 @@ func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
 	cb, ok := cs.cbMap[reqType]
 	return cb, ok
+}
+
+func (cs *coreService) getCommandDescriptor(reqType string) (commandDescriptor, bool) {
+	for _, commandHandler := range cs.desc.Commands.descriptors {
+		if reqType == commandHandler.name {
+			return commandHandler, true
+		}
+	}
+	return commandDescriptor{}, false
 }
 
 func (cs *coreService) cbHealth(r Request) Response {
