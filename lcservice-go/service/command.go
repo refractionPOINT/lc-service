@@ -15,8 +15,7 @@ var commandAllowedRequestParamTypes = map[string]struct{}{
 type CommandNamespace = string
 type CommandName = string
 type commandDescriptor struct {
-	Namespace CommandNamespace `json:"namespace"`
-	Name      CommandName      `json:"name"`
-	Args      Dict             `json:"args"`
-	handler   ServiceCallback
+	Name    CommandName `json:"name"`
+	Args    Dict        `json:"args"`
+	handler ServiceCallback
 }
