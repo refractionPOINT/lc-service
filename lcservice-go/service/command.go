@@ -9,7 +9,6 @@ var commandAllowedRequestParamTypes = map[string]struct{}{
 	RequestParamTypeEnum:   {},
 	RequestParamTypeInt:    {},
 	RequestParamTypeBool:   {},
-	RequestParamTypeFlag:   {},
 }
 
 type CommandNamespace = string

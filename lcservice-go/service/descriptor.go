@@ -53,7 +53,6 @@ const (
 	RequestParamTypeEnum   = "enum"
 	RequestParamTypeInt    = "int"
 	RequestParamTypeBool   = "bool"
-	RequestParamTypeFlag   = "flag"
 )
 
 type Descriptor struct {
