@@ -218,6 +218,15 @@ func (cs *coreService) cbHealth(r Request) Response {
 		cbSupported = append(cbSupported, k)
 	}
 	sort.StringSlice(cbSupported).Sort()
+
+	commandsSupported := make([]commandDescriptor, len(cs.desc.Commands.Descriptors))
+	for _, cmd := range cs.desc.Commands.Descriptors {
+		commandsSupported = append(commandsSupported, cmd)
+	}
+	sort.Slice(commandsSupported, func(i, j int) bool {
+		return commandsSupported[i].Name < commandsSupported[j].Name
+	})
+
 	return Response{
 		IsSuccess: true,
 		Data: Dict{
@@ -228,6 +237,7 @@ func (cs *coreService) cbHealth(r Request) Response {
 				"detect_subscriptions": cs.desc.DetectionsSubscribed,
 				"callbacks":            cbSupported,
 				"request_params":       cs.desc.RequestParameters,
+				"command_params":       commandsSupported,
 			},
 		},
 	}
