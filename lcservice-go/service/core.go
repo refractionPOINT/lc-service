@@ -60,13 +60,60 @@ func (cs *coreService) Init() error {
 	return nil
 }
 
-func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
+type handlerResolver interface {
+	parse(requestEvent RequestEvent) (Dict, error)
+	get(requestEvent RequestEvent) ServiceCallback
+}
+
+type requestHandlerResolver struct {
+	cs *coreService
+}
+
+func (r *requestHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) {
+	return requestEvent.Data, nil
+}
+
+func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
+	// Unlike the Python implementation, we will not perform validation
+	// of the incoming parameters based on the schema in the Descriptor.
+	// Instead we will leave that task to the user by using `DictToStruct`
+	// to facilitate Marshaling and validation.
+	// TODO revisit this, maybe we can at least validate part of it.
+
+	// Get the relevant handler.
+	handler, found := r.cs.getHandler(requestEvent.Type)
+	if !found {
+		return nil
+	}
+	return handler
+}
+
+type commandHandlerResolver struct {
+	commandsDesc *CommandsDescriptor
+}
+
+func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) {
+	// TODO here we might want to
+	// 1. filter request argument that we want to send to the command handler
+	// 2. revalidate what we received
+	return requestEvent.Data, nil
+}
+
+func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
+	for _, commandHandler := range c.commandsDesc.Descriptors {
+		if requestEvent.Type == commandHandler.Name {
+			return commandHandler.handler
+		}
+	}
+	return nil
+}
+
+func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetriever handlerResolver) (interface{}, bool) {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
 	// Validate the HMAC signature.
-	var err error
 	if !cs.verifyOrigin(data, sig) {
 		// This is the only special case where
 		// we return isAccepted = false to tell
@@ -112,16 +159,15 @@ func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface
 			Data: req.Data,
 		},
 	}
+	var err error
+	parsedData, err := handlerRetriever.parse(serviceRequest.Event)
+	if err != nil {
+		return NewErrorResponse(err.Error()), true
+	}
+	serviceRequest.Event.Data = parsedData
 
-	// Unlike the Python implementation, we will not perform validation
-	// of the incoming parameters based on the schema in the Descriptor.
-	// Instead we will leave that task to the user by using `DictToStruct`
-	// to facilitate Marshaling and validation.
-	// TODO revisit this, maybe we can at least validate part of it.
-
-	// Get the relevant handler.
-	handler, ok := cs.getHandler(req.Type)
-	if !ok {
+	handler := handlerRetriever.get(serviceRequest.Event)
+	if handler == nil {
 		return ErrNotImplemented, true
 	}
 
@@ -135,8 +181,15 @@ func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface
 
 	// Send it.
 	resp := handler(serviceRequest)
-
 	return resp, true
+}
+
+func (cs *coreService) ProcessCommand(data Dict, sig string) (interface{}, bool) {
+	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.Commands})
+}
+
+func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
+	return cs.processGenericRequest(data, sig, &requestHandlerResolver{cs: cs})
 }
 
 func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
