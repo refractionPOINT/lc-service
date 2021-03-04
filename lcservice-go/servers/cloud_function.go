@@ -5,21 +5,21 @@ import (
 	"net/http"
 )
 
-type cloudFunction struct {
+type CloudFunction struct {
 	svc Service
 }
 
-func NewCloudFunction(svc Service) *cloudFunction {
-	return &cloudFunction{
+func NewCloudFunction(svc Service) *CloudFunction {
+	return &CloudFunction{
 		svc: svc,
 	}
 }
 
-func (cf *cloudFunction) Init() error {
+func (cf *CloudFunction) Init() error {
 	return cf.svc.Init()
 }
 
-func (cf *cloudFunction) Process(w http.ResponseWriter, r *http.Request) {
+func (cf *CloudFunction) Process(w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{}
 	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
 		w.WriteHeader(400)
