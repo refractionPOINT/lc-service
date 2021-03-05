@@ -15,5 +15,9 @@ type CommandName = string
 type commandDescriptor struct {
 	Name    CommandName `json:"name"`
 	Args    Dict        `json:"args"`
-	handler ServiceCallback
+	handler CommandHandler
+}
+
+type CommandHandler interface {
+	process(Request) Response
 }

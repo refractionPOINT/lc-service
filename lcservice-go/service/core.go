@@ -100,9 +100,9 @@ func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) 
 }
 
 func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
-	for _, commandHandler := range c.commandsDesc.Descriptors {
-		if requestEvent.Type == commandHandler.Name {
-			return commandHandler.handler
+	for _, desc := range c.commandsDesc.Descriptors {
+		if requestEvent.Type == desc.Name {
+			return desc.handler.process
 		}
 	}
 	return nil
@@ -306,7 +306,7 @@ func (cs coreService) Trace(msg string) {
 	cs.desc.Log(msg)
 }
 
-func (cs *coreService) AddCommandHandler(name CommandName, args Dict, handler ServiceCallback) error {
+func (cs *coreService) AddCommandHandler(name CommandName, args Dict, handler CommandHandler) error {
 	if name == "" {
 		return fmt.Errorf("Command name cannot be empty")
 	}

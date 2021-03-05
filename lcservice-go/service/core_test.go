@@ -258,21 +258,27 @@ func TestResourceSupply(t *testing.T) {
 	}
 }
 
+type commandCBOne struct{}
+
+func (c *commandCBOne) process(req Request) Response {
+	return Response{IsSuccess: true, Data: Dict{"from": "cbOne"}}
+}
+
+type commandCBTwo struct{}
+
+func (c *commandCBTwo) process(req Request) Response {
+	return Response{IsSuccess: true, Data: Dict{"from": "cbTwo"}}
+}
+
 func TestCommand(t *testing.T) {
 	a := assert.New(t)
-	testCommandOneCB := func(req Request) Response {
-		return Response{IsSuccess: true, Data: Dict{"from": "cbOne"}}
-	}
-	testCommandTwoCB := func(req Request) Response {
-		return Response{IsSuccess: true, Data: Dict{"from": "cbTwo"}}
-	}
 	s, err := NewService(Descriptor{
 		SecretKey:   testSecretKey,
 		Log:         func(m string) { fmt.Println(m) },
 		LogCritical: func(m string) { fmt.Println(m) },
 	})
-	a.NoError(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
-	a.NoError(s.AddCommandHandler("commandTwo", Dict{}, testCommandTwoCB))
+	a.NoError(s.AddCommandHandler("commandOne", Dict{}, &commandCBOne{}))
+	a.NoError(s.AddCommandHandler("commandTwo", Dict{}, &commandCBTwo{}))
 	a.NoError(err)
 	a.NotNil(s)
 
@@ -296,8 +302,8 @@ func TestCommand(t *testing.T) {
 	r = resp.(Response)
 	a.Equal(Dict{"from": "cbTwo"}, r.Data)
 
-	a.Error(s.AddCommandHandler("", Dict{}, testCommandOneCB))
-	a.Error(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
+	a.Error(s.AddCommandHandler("", Dict{}, &commandCBOne{}))
+	a.Error(s.AddCommandHandler("commandOne", Dict{}, &commandCBOne{}))
 	a.Error(s.AddCommandHandler("commandThree", Dict{}, nil))
-	a.NoError(s.AddCommandHandler("commandThree", Dict{}, testCommandOneCB))
+	a.NoError(s.AddCommandHandler("commandThree", Dict{}, &commandCBOne{}))
 }
