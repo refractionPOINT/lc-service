@@ -74,8 +74,8 @@ type Descriptor struct {
 	// Callbacks
 	Callbacks DescriptorCallbacks
 
-	// Commands
-	Commands CommandsDescriptor
+	// commands
+	commands commandsDescriptor
 }
 
 // Optional callbacks available.

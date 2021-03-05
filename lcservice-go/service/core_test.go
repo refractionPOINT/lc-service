@@ -270,19 +270,9 @@ func TestCommand(t *testing.T) {
 		SecretKey:   testSecretKey,
 		Log:         func(m string) { fmt.Println(m) },
 		LogCritical: func(m string) { fmt.Println(m) },
-		Commands: CommandsDescriptor{
-			[]commandDescriptor{
-				{
-					Name:    "commandOne",
-					handler: testCommandOneCB,
-				},
-				{
-					Name:    "commandTwo",
-					handler: testCommandTwoCB,
-				},
-			},
-		},
 	})
+	a.NoError(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
+	a.NoError(s.AddCommandHandler("commandTwo", Dict{}, testCommandTwoCB))
 	a.NoError(err)
 	a.NotNil(s)
 
@@ -305,4 +295,9 @@ func TestCommand(t *testing.T) {
 	a.True(accepted)
 	r = resp.(Response)
 	a.Equal(Dict{"from": "cbTwo"}, r.Data)
+
+	a.Error(s.AddCommandHandler("", Dict{}, testCommandOneCB))
+	a.Error(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
+	a.Error(s.AddCommandHandler("commandThree", Dict{}, nil))
+	a.NoError(s.AddCommandHandler("commandThree", Dict{}, testCommandOneCB))
 }
