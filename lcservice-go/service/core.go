@@ -89,7 +89,7 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 }
 
 type commandHandlerResolver struct {
-	commandsDesc *CommandsDescriptor
+	commandsDesc *commandsDescriptor
 }
 
 func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) {
@@ -185,7 +185,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 }
 
 func (cs *coreService) ProcessCommand(data Dict, sig string) (interface{}, bool) {
-	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.Commands})
+	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.commands})
 }
 
 func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
@@ -219,8 +219,8 @@ func (cs *coreService) cbHealth(r Request) Response {
 	}
 	sort.StringSlice(cbSupported).Sort()
 
-	commandsSupported := make([]commandDescriptor, len(cs.desc.Commands.Descriptors))
-	for _, cmd := range cs.desc.Commands.Descriptors {
+	commandsSupported := make([]commandDescriptor, len(cs.desc.commands.Descriptors))
+	for _, cmd := range cs.desc.commands.Descriptors {
 		commandsSupported = append(commandsSupported, cmd)
 	}
 	sort.Slice(commandsSupported, func(i, j int) bool {
@@ -304,4 +304,24 @@ func (cs coreService) Trace(msg string) {
 		return
 	}
 	cs.desc.Log(msg)
+}
+
+func (cs *coreService) AddCommandHandler(name CommandName, args Dict, handler ServiceCallback) error {
+	if name == "" {
+		return fmt.Errorf("Command name cannot be empty")
+	}
+	for _, desc := range cs.desc.commands.Descriptors {
+		if name == desc.Name {
+			return fmt.Errorf("Command already registered for that name %s", name)
+		}
+	}
+	if handler == nil {
+		return fmt.Errorf("Command handler is nil for %s", name)
+	}
+	cs.desc.commands.Descriptors = append(cs.desc.commands.Descriptors, commandDescriptor{
+		Name:    name,
+		Args:    args,
+		handler: handler,
+	})
+	return nil
 }
