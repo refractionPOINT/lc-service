@@ -26,7 +26,7 @@ func init() {
 		panic(err)
 	}
 
-	cf := srv.NewCloudFunction(sv)
+	cf = srv.NewCloudFunction(sv)
 	if err := cf.Init(); err != nil {
 		panic(err)
 	}
