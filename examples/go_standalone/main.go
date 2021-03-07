@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	srv "github.com/refractionPOINT/lc-service/lcservice-go/servers"
 	svc "github.com/refractionPOINT/lc-service/lcservice-go/service"
@@ -21,6 +22,7 @@ func (s *templateService) onOrgUninstall(request svc.Request) svc.Response {
 func main() {
 	tSvc := templateService{}
 	sv, err := svc.NewService(svc.Descriptor{
+		SecretKey: os.Getenv("SHARED_SECRET"),
 		Callbacks: svc.DescriptorCallbacks{
 			OnOrgInstall:   tSvc.onOrgInstall,
 			OnOrgUninstall: tSvc.onOrgUninstall,
