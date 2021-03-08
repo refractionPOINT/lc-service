@@ -1,7 +1,6 @@
 package servers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -33,20 +32,5 @@ func (sa *standalone) Start() error {
 }
 
 func (sa *standalone) process(w http.ResponseWriter, r *http.Request) {
-	d := map[string]interface{}{}
-	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
-		w.WriteHeader(400)
-		return
-	}
-	s := r.Header.Get("lc-svc-sig")
-
-	resp, isAccepted := sa.svc.ProcessRequest(d, s)
-	if !isAccepted {
-		w.WriteHeader(401)
-		return
-	}
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		w.WriteHeader(500)
-		return
-	}
+	process(sa.svc, w, r)
 }
