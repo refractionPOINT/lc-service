@@ -204,7 +204,9 @@ func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 		return false
 	}
 	expected := mac.Sum(nil)
-	return hmac.Equal([]byte(hex.EncodeToString(expected)), []byte(sig))
+	verified := hmac.Equal([]byte(hex.EncodeToString(expected)), []byte(sig))
+	cs.Debug(fmt.Sprintf("hmac verified: %v", verified))
+	return verified
 }
 
 func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
