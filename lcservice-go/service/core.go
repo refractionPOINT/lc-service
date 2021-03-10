@@ -205,7 +205,7 @@ func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 	}
 	expected := mac.Sum(nil)
 	verified := hmac.Equal([]byte(hex.EncodeToString(expected)), []byte(sig))
-	cs.Debug(fmt.Sprintf("hmac verified: %v", verified))
+	cs.Debug(fmt.Sprintf("hmac verified: %v, expected %s", verified, sig))
 	return verified
 }
 
