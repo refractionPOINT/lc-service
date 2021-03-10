@@ -34,7 +34,7 @@ func process(service Service, w http.ResponseWriter, r *http.Request) {
 	}
 	sig := r.Header.Get("lc-svc-sig")
 
-	requestTypeValue, ok := d["requestType"]
+	requestTypeValue, ok := d["request_type"]
 	if !ok || requestTypeValue == "request" {
 		// it's not there we assume it's a regular request
 		resp, isAccepted := service.ProcessRequest(d, sig)
