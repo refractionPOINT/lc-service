@@ -208,15 +208,17 @@ func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.json.Marshal: %v", err))
 		return false
 	}
-	d = lcCompatibleJSONMarshal(d)
+	compatJSON := lcCompatibleJSONMarshal(d)
 	mac := hmac.New(sha256.New, []byte(cs.desc.SecretKey))
-	if _, err := mac.Write(d); err != nil {
+	if _, err := mac.Write(compatJSON); err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.hmac.Write: %v", err))
 		return false
 	}
-	expected := mac.Sum(nil)
-	verified := hmac.Equal([]byte(hex.EncodeToString(expected)), []byte(sig))
-	cs.Debug(fmt.Sprintf("hmac verified: %v, expected %s", verified, sig))
+	expected := []byte(hex.EncodeToString(mac.Sum(nil)))
+	sigBytes := []byte(sig)
+	verified := hmac.Equal(expected, sigBytes)
+
+	cs.Debug(fmt.Sprintf("in (raw, sig): (%v, %v) - compat '%v' - sig generated '%v'", d, sigBytes, compatJSON, expected))
 	return verified
 }
 
