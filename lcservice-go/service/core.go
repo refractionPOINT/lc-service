@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -192,12 +193,22 @@ func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface
 	return cs.processGenericRequest(data, sig, &requestHandlerResolver{cs: cs})
 }
 
+func lcCompatibleJSONMarshal(d []byte) []byte {
+	res := make([]byte, 0, 2*len(d))
+	// replace ":" -> ": "
+	res = bytes.ReplaceAll(d, []byte(`":"`), []byte(`": "`))
+	// replace "," -> ", "
+	res = bytes.ReplaceAll(res, []byte(`","`), []byte(`", "`))
+	return res
+}
+
 func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
 	d, err := json.Marshal(data)
 	if err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.json.Marshal: %v", err))
 		return false
 	}
+	d = lcCompatibleJSONMarshal(d)
 	mac := hmac.New(sha256.New, []byte(cs.desc.SecretKey))
 	if _, err := mac.Write(d); err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.hmac.Write: %v", err))
