@@ -196,7 +196,7 @@ func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface
 func lcCompatibleJSONMarshal(d []byte) []byte {
 	res := make([]byte, 0, 2*len(d))
 	// replace ":" -> ": "
-	res = bytes.ReplaceAll(d, []byte{34, 58, 34}, []byte{34, 58, 32, 34})
+	res = bytes.ReplaceAll(d, []byte(`":"`), []byte(`": "`))
 	// replace "," -> ", "
 	res = bytes.ReplaceAll(res, []byte{34, 44, 34}, []byte{34, 44, 32, 34})
 	return res
