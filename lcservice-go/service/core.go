@@ -198,7 +198,7 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 	// replace ":" -> ": "
 	res = bytes.ReplaceAll(d, []byte(`":"`), []byte(`": "`))
 	// replace "," -> ", "
-	res = bytes.ReplaceAll(res, []byte{34, 44, 34}, []byte{34, 44, 32, 34})
+	res = bytes.ReplaceAll(res, []byte(`","`), []byte(`", "`))
 	return res
 }
 
