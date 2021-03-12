@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"sync/atomic"
@@ -29,13 +30,13 @@ type coreService struct {
 }
 
 type lcRequest struct {
-	Version  int    `json:"version"`
-	JWT      string `json:"jwt"`
-	OID      string `json:"oid"`
-	MsgID    string `json:"mid"`
-	Deadline int64  `json:"deadline"`
-	Type     string `json:"etype"`
-	Data     Dict   `json:"data"`
+	Version  int     `json:"version"`
+	JWT      string  `json:"jwt"`
+	OID      string  `json:"oid"`
+	MsgID    string  `json:"mid"`
+	Deadline float64 `json:"deadline"`
+	Type     string  `json:"etype"`
+	Data     Dict    `json:"data"`
 }
 
 var ErrNotImplemented = NewErrorResponse("not implemented")
@@ -145,7 +146,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	// Check if we're still within the deadline.
 	deadline := time.Time{}
 	if req.Deadline != 0 {
-		deadline := time.Unix(req.Deadline, 0)
+		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
 			return NewErrorResponse("deadline exceeded"), true
 		}
