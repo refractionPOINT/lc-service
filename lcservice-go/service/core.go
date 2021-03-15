@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"sync/atomic"
@@ -29,13 +30,13 @@ type coreService struct {
 }
 
 type lcRequest struct {
-	Version  int    `json:"version"`
-	JWT      string `json:"jwt"`
-	OID      string `json:"oid"`
-	MsgID    string `json:"mid"`
-	Deadline int64  `json:"deadline"`
-	Type     string `json:"etype"`
-	Data     Dict   `json:"data"`
+	Version  int     `json:"version"`
+	JWT      string  `json:"jwt"`
+	OID      string  `json:"oid"`
+	MsgID    string  `json:"mid"`
+	Deadline float64 `json:"deadline"`
+	Type     string  `json:"etype"`
+	Data     Dict    `json:"data"`
 }
 
 var ErrNotImplemented = NewErrorResponse("not implemented")
@@ -145,7 +146,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	// Check if we're still within the deadline.
 	deadline := time.Time{}
 	if req.Deadline != 0 {
-		deadline := time.Unix(req.Deadline, 0)
+		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
 			return NewErrorResponse("deadline exceeded"), true
 		}
@@ -207,23 +208,19 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 }
 
 func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
-	d, err := json.Marshal(data)
+	jsonIn, err := json.Marshal(data)
 	if err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.json.Marshal: %v", err))
 		return false
 	}
-	compatJSON := lcCompatibleJSONMarshal(d)
+	jsonCompat := lcCompatibleJSONMarshal(jsonIn)
 	mac := hmac.New(sha256.New, []byte(cs.desc.SecretKey))
-	if _, err := mac.Write(compatJSON); err != nil {
+	if _, err := mac.Write(jsonCompat); err != nil {
 		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.hmac.Write: %v", err))
 		return false
 	}
-	expected := []byte(hex.EncodeToString(mac.Sum(nil)))
-	sigBytes := []byte(sig)
-	verified := hmac.Equal(expected, sigBytes)
-
-	cs.Debug(fmt.Sprintf("in (raw, sig): (%v, %v) - compat '%v' - sig generated '%v'", d, sigBytes, compatJSON, expected))
-	return verified
+	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
+	return hmac.Equal(jsonCompatSig, []byte(sig))
 }
 
 func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
