@@ -52,10 +52,9 @@ func TestInteractive(t *testing.T) {
 	if !isAccepted {
 		t.Error("valid sig not accepted")
 	}
-	r := resp.(Response)
-	r.Data["start_time"] = 0
+	resp.Data["start_time"] = 0
 
-	if !compareResponses(r, Response{
+	if !compareResponses(resp, Response{
 		IsSuccess: true,
 		Data: Dict{
 			"version":           1,
@@ -68,7 +67,7 @@ func TestInteractive(t *testing.T) {
 			},
 		},
 	}) {
-		t.Errorf("unexpected: %+v", r)
+		t.Errorf("unexpected: %+v", resp)
 	}
 
 	// Make a request to callback.
@@ -104,14 +103,13 @@ func TestInteractive(t *testing.T) {
 	if !isAccepted {
 		t.Error("valid sig not accepted")
 	}
-	r = resp.(Response)
 
-	if !compareResponses(r, Response{
+	if !compareResponses(resp, Response{
 		IsSuccess: true,
 		Data: Dict{
 			"yes": 1,
 		},
 	}) {
-		t.Errorf("unexpected: %+v", r)
+		t.Errorf("unexpected: %+v", resp)
 	}
 }
