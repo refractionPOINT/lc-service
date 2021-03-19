@@ -39,8 +39,6 @@ type lcRequest struct {
 	Data     Dict    `json:"data"`
 }
 
-var ErrNotImplemented = NewErrorResponse("not implemented")
-
 func NewService(descriptor Descriptor) (*coreService, error) {
 	cs := &coreService{
 		desc:      descriptor,
@@ -127,16 +125,12 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	// Parse the request format.
 	req := lcRequest{}
 	if err := DictToStruct(data, &req); err != nil {
-		return Response{
-			Error: fmt.Sprintf("invalid format: %v", err),
-		}, true
+		return NewErrorResponse(fmt.Errorf("invalid format: %v", err)), true
 	}
 
 	// Check we can work with this version of the protocol.
 	if req.Version > PROTOCOL_VERSION {
-		return Response{
-			Data: Dict{"error": fmt.Sprintf("unsupported version (> %d)", PROTOCOL_VERSION)},
-		}, true
+		return NewErrorResponse(fmt.Errorf("unsupported version (> %d)", PROTOCOL_VERSION)), true
 	}
 
 	if cs.desc.IsDebug {
@@ -148,7 +142,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	if req.Deadline != 0 {
 		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
-			return NewErrorResponse("deadline exceeded"), true
+			return NewErrorResponse(fmt.Errorf("deadline exceeded")), true
 		}
 	}
 
@@ -164,13 +158,13 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	var err error
 	parsedData, err := handlerRetriever.parse(serviceRequest.Event)
 	if err != nil {
-		return NewErrorResponse(err.Error()), true
+		return NewErrorResponse(err), true
 	}
 	serviceRequest.Event.Data = parsedData
 
 	handler := handlerRetriever.get(serviceRequest.Event)
 	if handler == nil {
-		return ErrNotImplemented, true
+		return NewErrorResponse(fmt.Errorf("not implemented")), true
 	}
 
 	// Create an SDK instance.
@@ -178,7 +172,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 		OID: req.OID,
 		JWT: req.JWT,
 	}, cs); err != nil {
-		return NewErrorResponse(err.Error()), true
+		return NewErrorResponse(err), true
 	}
 
 	// Send it.

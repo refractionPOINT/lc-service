@@ -7,23 +7,26 @@ import (
 	svc "github.com/refractionPOINT/lc-service/lcservice-go/service"
 )
 
-func isRequestNotImplemented(resp interface{}) bool {
-	svcResp, ok := resp.(svc.Response)
-	if !ok {
-		return false
+func encodeResponse(resp svc.Response, w http.ResponseWriter) {
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	return svcResp.Error == svc.ErrNotImplemented.Error
 }
 
-func handleResponse(resp interface{}, isAccepted bool, w http.ResponseWriter) {
+func handleResponse(resp svc.Response, isAccepted bool, w http.ResponseWriter) {
 	if !isAccepted {
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		w.WriteHeader(500)
+	if resp.Error != "" {
+		w.WriteHeader(http.StatusBadRequest)
+		encodeResponse(resp, w)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+	encodeResponse(resp, w)
 }
 
 func process(service Service, w http.ResponseWriter, r *http.Request) {

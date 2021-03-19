@@ -15,10 +15,12 @@ func DictToStruct(d Dict, s interface{}) error {
 	return nil
 }
 
-func NewErrorResponse(err string) Response {
-	return Response{Data: Dict{"error": err}}
+func NewErrorResponse(err error) Response {
+	return Response{Error: err.Error()}
 }
 
-func NewRetriableResponse(err string) Response {
-	return Response{IsRetriable: true, Data: Dict{"error": err}}
+func NewRetriableResponse(err error) Response {
+	resp := NewErrorResponse(err)
+	resp.IsRetriable = true
+	return resp
 }
