@@ -101,10 +101,9 @@ func TestHealth(t *testing.T) {
 	if !isAccepted {
 		t.Error("valid sig not accepted")
 	}
-	r := resp.(Response)
-	r.Data["start_time"] = 0
+	resp.Data["start_time"] = 0
 
-	if !compareResponses(r, Response{
+	if !compareResponses(resp, Response{
 		IsSuccess: true,
 		Data: Dict{
 			"version":           1,
@@ -117,7 +116,7 @@ func TestHealth(t *testing.T) {
 			},
 		},
 	}) {
-		t.Errorf("unexpected: %+v", r)
+		t.Errorf("unexpected: %+v", resp)
 	}
 }
 
@@ -283,8 +282,7 @@ func TestCommand(t *testing.T) {
 	sig := computeSig(testData)
 	resp, accepted := s.ProcessCommand(testData, sig)
 	a.True(accepted)
-	r := resp.(Response)
-	a.Equal(Dict{"from": "cbOne"}, r.Data)
+	a.Equal(Dict{"from": "cbOne"}, resp.Data)
 
 	testData = makeRequest(lcRequest{
 		Version: 1,
@@ -293,8 +291,7 @@ func TestCommand(t *testing.T) {
 	sig = computeSig(testData)
 	resp, accepted = s.ProcessCommand(testData, sig)
 	a.True(accepted)
-	r = resp.(Response)
-	a.Equal(Dict{"from": "cbTwo"}, r.Data)
+	a.Equal(Dict{"from": "cbTwo"}, resp.Data)
 
 	a.Error(s.AddCommandHandler("", Dict{}, testCommandOneCB))
 	a.Error(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))

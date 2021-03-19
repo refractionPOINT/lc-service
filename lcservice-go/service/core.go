@@ -108,7 +108,7 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return nil
 }
 
-func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetriever handlerResolver) (interface{}, bool) {
+func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetriever handlerResolver) (Response, bool) {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
@@ -119,7 +119,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 		// we return isAccepted = false to tell
 		// the parent that the signature is
 		// specifically invalid.
-		return nil, false
+		return Response{}, false
 	}
 
 	// Parse the request format.
@@ -180,11 +180,11 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 	return resp, true
 }
 
-func (cs *coreService) ProcessCommand(data Dict, sig string) (interface{}, bool) {
+func (cs *coreService) ProcessCommand(data Dict, sig string) (Response, bool) {
 	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.commands})
 }
 
-func (cs *coreService) ProcessRequest(data Dict, sig string) (response interface{}, isAccepted bool) {
+func (cs *coreService) ProcessRequest(data Dict, sig string) (Response, bool) {
 	return cs.processGenericRequest(data, sig, &requestHandlerResolver{cs: cs})
 }
 

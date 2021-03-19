@@ -116,7 +116,7 @@ func (is *interactiveService) Init() error {
 	return is.cs.Init()
 }
 
-func (is *interactiveService) ProcessRequest(data map[string]interface{}, sig string) (response interface{}, isAccepted bool) {
+func (is *interactiveService) ProcessRequest(data map[string]interface{}, sig string) (Response, bool) {
 	return is.cs.ProcessRequest(data, sig)
 }
 
