@@ -16,7 +16,7 @@ func encodeResponse(resp svc.Response, w http.ResponseWriter) {
 
 func handleResponse(resp svc.Response, isAccepted bool, w http.ResponseWriter) {
 	if !isAccepted {
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(http.StatusPreconditionFailed)
 		return
 	}
 	if resp.Error != "" {
