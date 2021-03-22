@@ -32,7 +32,7 @@ func handleResponse(resp svc.Response, isAccepted bool, w http.ResponseWriter) {
 func process(service Service, w http.ResponseWriter, r *http.Request) {
 	d := map[string]interface{}{}
 	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	sig := r.Header.Get("lc-svc-sig")

@@ -61,12 +61,17 @@ func (cs *coreService) Init() error {
 }
 
 type handlerResolver interface {
+	getType() string
 	parse(requestEvent RequestEvent) (Dict, error)
 	get(requestEvent RequestEvent) ServiceCallback
 }
 
 type requestHandlerResolver struct {
 	cs *coreService
+}
+
+func (r *requestHandlerResolver) getType() string {
+	return "request"
 }
 
 func (r *requestHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) {
@@ -92,6 +97,10 @@ type commandHandlerResolver struct {
 	commandsDesc *commandsDescriptor
 }
 
+func (r *commandHandlerResolver) getType() string {
+	return "command"
+}
+
 func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) {
 	// TODO here we might want to
 	// 1. filter request argument that we want to send to the command handler
@@ -108,11 +117,15 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return nil
 }
 
-func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetriever handlerResolver) (Response, bool) {
+func (cs *coreService) processGenericRequest(data Dict, sig string, resolver handlerResolver) (Response, bool) {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
+	if cs.desc.IsDebug {
+		cs.desc.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
+	}
+
 	// Validate the HMAC signature.
 	if !cs.verifyOrigin(data, sig) {
 		// This is the only special case where
@@ -156,13 +169,13 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 		},
 	}
 	var err error
-	parsedData, err := handlerRetriever.parse(serviceRequest.Event)
+	parsedData, err := resolver.parse(serviceRequest.Event)
 	if err != nil {
 		return NewErrorResponse(err), true
 	}
 	serviceRequest.Event.Data = parsedData
 
-	handler := handlerRetriever.get(serviceRequest.Event)
+	handler := resolver.get(serviceRequest.Event)
 	if handler == nil {
 		return NewErrorResponse(fmt.Errorf("not implemented")), true
 	}
