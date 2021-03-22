@@ -117,14 +117,24 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return nil
 }
 
+func (cs *coreService) log(log string) {
+	if cs.desc.IsDebug {
+		cs.desc.Log(log)
+	}
+}
+
+func (cs *coreService) logError(errStr string) {
+	if cs.desc.IsDebug {
+		cs.desc.LogCritical(errStr)
+	}
+}
+
 func (cs *coreService) processGenericRequest(data Dict, sig string, resolver handlerResolver) (Response, bool) {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
-	if cs.desc.IsDebug {
-		cs.desc.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
-	}
+	cs.log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
 
 	// Validate the HMAC signature.
 	if !cs.verifyOrigin(data, sig) {
@@ -155,6 +165,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 	if req.Deadline != 0 {
 		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
+			cs.logError("deadline exceeded")
 			return NewErrorResponse(fmt.Errorf("deadline exceeded")), true
 		}
 	}
@@ -171,21 +182,27 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 	var err error
 	parsedData, err := resolver.parse(serviceRequest.Event)
 	if err != nil {
+		cs.logError(err.Error())
 		return NewErrorResponse(err), true
 	}
 	serviceRequest.Event.Data = parsedData
 
 	handler := resolver.get(serviceRequest.Event)
 	if handler == nil {
+		cs.logError(fmt.Sprintf("resolver not implemented for '%s'", serviceRequest.Event))
 		return NewErrorResponse(fmt.Errorf("not implemented")), true
 	}
 
-	// Create an SDK instance.
-	if serviceRequest.Org, err = lc.NewOrganizationFromClientOptions(lc.ClientOptions{
-		OID: req.OID,
-		JWT: req.JWT,
-	}, cs); err != nil {
-		return NewErrorResponse(err), true
+	// health request will not be providing a jwt - if you want an org provide an oid and a jwt
+	if req.OID != "" && req.JWT != "" {
+		// Create an SDK instance.
+		if serviceRequest.Org, err = lc.NewOrganizationFromClientOptions(lc.ClientOptions{
+			OID: req.OID,
+			JWT: req.JWT,
+		}, cs); err != nil {
+			cs.logError(err.Error())
+			return NewErrorResponse(err), true
+		}
 	}
 
 	// Send it.
