@@ -177,6 +177,9 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, handlerRetri
 
 	// Send it.
 	resp := handler(serviceRequest)
+	if cs.desc.IsDebug {
+		cs.desc.Log(fmt.Sprintf("REQ (%s) result: err(%s)", req.MsgID, resp.Error))
+	}
 	return resp, true
 }
 
