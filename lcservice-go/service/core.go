@@ -226,9 +226,8 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 		dataIn: {"key0":{},"key1":42.24,"key2":"value2","jwt":null}
 		compat: {"key0": {}, "key1": 42.24, "key2": "value2", "jwt": null}
 	*/
-	res := make([]byte, 0, 2*len(d))
 	// replace '":' -> '": '
-	res = bytes.ReplaceAll(d, []byte(`":`), []byte(`": `))
+	res := bytes.ReplaceAll(d, []byte(`":`), []byte(`": `))
 	// replace ',"' -> ', "'
 	res = bytes.ReplaceAll(res, []byte(`,"`), []byte(`, "`))
 	return res
