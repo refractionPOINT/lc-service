@@ -114,6 +114,7 @@ func TestHealth(t *testing.T) {
 				"request_params":       params,
 				"detect_subscriptions": []string{"d1", "d2"},
 				"callbacks":            []string{"health", "org_uninstall"},
+				"commands":             Dict{},
 			},
 		},
 	}) {
