@@ -109,8 +109,12 @@ func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) 
 }
 
 func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
+	commandName, found := requestEvent.Data["command_name"]
+	if !found {
+		return nil
+	}
 	for _, commandHandler := range c.commandsDesc.Descriptors {
-		if requestEvent.Type == commandHandler.Name {
+		if commandName == commandHandler.Name {
 			return commandHandler.handler
 		}
 	}
