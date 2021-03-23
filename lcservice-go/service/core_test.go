@@ -50,16 +50,17 @@ func TestAuth(t *testing.T) {
 }
 
 func computeSig(data Dict) string {
-	d, err := json.Marshal(data)
+	jsonIn, err := json.Marshal(data)
 	if err != nil {
-		panic(err)
+		return ""
 	}
+	jsonCompat := lcCompatibleJSONMarshal(jsonIn)
 	mac := hmac.New(sha256.New, []byte(testSecretKey))
-	if _, err := mac.Write(d); err != nil {
-		panic(err)
+	if _, err := mac.Write(jsonCompat); err != nil {
+		return ""
 	}
-	expected := mac.Sum(nil)
-	return hex.EncodeToString(expected)
+	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
+	return string(jsonCompatSig)
 }
 
 func TestHealth(t *testing.T) {
@@ -269,6 +270,7 @@ func TestCommand(t *testing.T) {
 		SecretKey:   testSecretKey,
 		Log:         func(m string) { fmt.Println(m) },
 		LogCritical: func(m string) { fmt.Println(m) },
+		IsDebug:     true,
 	})
 	a.NoError(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
 	a.NoError(s.AddCommandHandler("commandTwo", Dict{}, testCommandTwoCB))
@@ -277,20 +279,24 @@ func TestCommand(t *testing.T) {
 
 	testData := makeRequest(lcRequest{
 		Version: 1,
-		Type:    "commandOne",
+		Type:    "command",
+		Data:    Dict{"command_name": "commandOne"},
 	})
 	sig := computeSig(testData)
 	resp, accepted := s.ProcessCommand(testData, sig)
 	a.True(accepted)
+	a.Empty(resp.Error)
 	a.Equal(Dict{"from": "cbOne"}, resp.Data)
 
 	testData = makeRequest(lcRequest{
 		Version: 1,
-		Type:    "commandTwo",
+		Type:    "command",
+		Data:    Dict{"command_name": "commandTwo"},
 	})
 	sig = computeSig(testData)
 	resp, accepted = s.ProcessCommand(testData, sig)
 	a.True(accepted)
+	a.Empty(resp.Error)
 	a.Equal(Dict{"from": "cbTwo"}, resp.Data)
 
 	a.Error(s.AddCommandHandler("", Dict{}, testCommandOneCB))
