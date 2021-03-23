@@ -95,6 +95,7 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 
 type commandHandlerResolver struct {
 	commandsDesc *commandsDescriptor
+	desc         *Descriptor
 }
 
 func (r *commandHandlerResolver) getType() string {
@@ -111,12 +112,21 @@ func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) 
 func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
 	commandName, found := requestEvent.Data["command_name"]
 	if !found {
+		if c.desc.IsDebug {
+			c.desc.Log("command_name not found in data")
+		}
 		return nil
+	}
+	if c.desc.IsDebug {
+		c.desc.Log(fmt.Sprintf("looking for handler for '%s'", commandName))
 	}
 	for _, commandHandler := range c.commandsDesc.Descriptors {
 		if commandName == commandHandler.Name {
 			return commandHandler.handler
 		}
+	}
+	if c.desc.IsDebug {
+		c.desc.Log(fmt.Sprintf("no handler found for '%s'", commandName))
 	}
 	return nil
 }
@@ -218,7 +228,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 }
 
 func (cs *coreService) ProcessCommand(data Dict, sig string) (Response, bool) {
-	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.commands})
+	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.commands, desc: &cs.desc})
 }
 
 func (cs *coreService) ProcessRequest(data Dict, sig string) (Response, bool) {
