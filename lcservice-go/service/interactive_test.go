@@ -64,6 +64,7 @@ func TestInteractive(t *testing.T) {
 				"request_params":       params,
 				"detect_subscriptions": []string{"d1", "d2", "svc-testService-ex"},
 				"callbacks":            []string{"detection", "health", "org_install", "org_per_1h", "org_uninstall"},
+				"commands":             Dict{},
 			},
 		},
 	}) {
