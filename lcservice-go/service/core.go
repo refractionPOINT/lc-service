@@ -261,7 +261,7 @@ func (cs *coreService) cbHealth(r Request) Response {
 	}
 	sort.StringSlice(cbSupported).Sort()
 
-	commandsSupported := make([]commandDescriptor, len(cs.desc.commands.Descriptors))
+	commandsSupported := make([]commandDescriptor, 0, len(cs.desc.commands.Descriptors))
 	commandsSupported = append(commandsSupported, cs.desc.commands.Descriptors...)
 	sort.Slice(commandsSupported, func(i, j int) bool {
 		return commandsSupported[i].Name < commandsSupported[j].Name
