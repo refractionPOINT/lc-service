@@ -261,11 +261,10 @@ func (cs *coreService) cbHealth(r Request) Response {
 	}
 	sort.StringSlice(cbSupported).Sort()
 
-	commandsSupported := make([]commandDescriptor, len(cs.desc.commands.Descriptors))
-	commandsSupported = append(commandsSupported, cs.desc.commands.Descriptors...)
-	sort.Slice(commandsSupported, func(i, j int) bool {
-		return commandsSupported[i].Name < commandsSupported[j].Name
-	})
+	commandsSupported := make(map[string]commandDescriptor, len(cs.desc.commands.Descriptors))
+	for _, commandDescriptor := range cs.desc.commands.Descriptors {
+		commandsSupported[commandDescriptor.Name] = commandDescriptor
+	}
 
 	return Response{
 		IsSuccess: true,
