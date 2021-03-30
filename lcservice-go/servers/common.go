@@ -38,15 +38,18 @@ func process(service Service, w http.ResponseWriter, r *http.Request) {
 	sig := r.Header.Get("lc-svc-sig")
 
 	requestTypeValue, ok := d["etype"]
-	if !ok || requestTypeValue == "request" {
-		// it's not there we assume it's a regular request
-		resp, isAccepted := service.ProcessRequest(d, sig)
-		handleResponse(resp, isAccepted, w)
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	if requestTypeValue == "command" {
 		resp, isAccepted := service.ProcessCommand(d, sig)
 		handleResponse(resp, isAccepted, w)
 		return
 	}
+
+	// it's not a command, then it's a request
+	resp, isAccepted := service.ProcessRequest(d, sig)
+	handleResponse(resp, isAccepted, w)
 }
