@@ -63,7 +63,6 @@ type InteractiveCallback = func(InteractiveRequest) Response
 // Canonical format for context passing
 // between Services and LimaCharlie.
 type interactiveContext struct {
-	SessionID  string `json:"si"`
 	CallbackID string `json:"cb"`
 	JobID      string `json:"j"`
 	Context    Dict   `json:"c"`
@@ -74,6 +73,11 @@ type inboundDetection struct {
 	Routing struct {
 		InvestigationID string `json:"investigation_id"`
 	} `json:"routing"`
+}
+
+type TrackedTaskingOptions struct {
+	Context Dict
+	JobID   string
 }
 
 func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallback) (is *interactiveService, err error) {
@@ -208,6 +212,29 @@ func (is *interactiveService) applyInteractiveRule(org *lc.Organization) error {
 		SyncDRRules: true,
 	}); err != nil {
 		is.cs.desc.LogCritical(fmt.Sprintf("error syncing interactive rule: %v", err))
+		return err
+	}
+	return nil
+}
+
+func (is *interactiveService) TrackedTasking(sensor lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
+	cbHash := is.getCbHash(cb)
+	if _, ok := is.interactiveCallbacks[cbHash]; !ok {
+		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cb))
+	}
+	serialCtx, err := json.Marshal(interactiveContext{
+		CallbackID: cbHash,
+		JobID:      opts.JobID,
+		Context:    opts.Context,
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := sensor.Task(task, TaskingOptions{
+		InvestigationID:      is.detectionName,
+		InvestigationContext: serialCtx,
+	}); err != nil {
 		return err
 	}
 	return nil
