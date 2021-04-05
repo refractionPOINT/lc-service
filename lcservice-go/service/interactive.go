@@ -231,9 +231,9 @@ func (is *interactiveService) TrackedTasking(sensor lc.Sensor, task string, opts
 		return err
 	}
 
-	if err := sensor.Task(task, TaskingOptions{
+	if err := sensor.Task(task, lc.TaskingOptions{
 		InvestigationID:      is.detectionName,
-		InvestigationContext: serialCtx,
+		InvestigationContext: string(serialCtx),
 	}); err != nil {
 		return err
 	}
