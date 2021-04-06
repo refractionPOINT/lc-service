@@ -124,6 +124,10 @@ func (is *InteractiveService) ProcessRequest(data map[string]interface{}, sig st
 	return is.cs.ProcessRequest(data, sig)
 }
 
+func (is *InteractiveService) ProcessCommand(commandArguments map[string]interface{}, sig string) (Response, bool) {
+	return is.cs.ProcessCommand(commandArguments, sig)
+}
+
 func (is *InteractiveService) getCbHash(cb interface{}) string {
 	name := runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name()
 	h := md5.Sum([]byte(fmt.Sprintf("%s/%s", is.cs.desc.SecretKey, name)))
@@ -238,4 +242,42 @@ func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opt
 		return err
 	}
 	return nil
+}
+
+// LC.Logger Interface Compatibility
+func (is *InteractiveService) Fatal(msg string) {
+	if is.cs.desc.LogCritical == nil {
+		return
+	}
+	is.cs.desc.LogCritical(msg)
+}
+func (is *InteractiveService) Error(msg string) {
+	if is.cs.desc.LogCritical == nil {
+		return
+	}
+	is.cs.desc.LogCritical(msg)
+}
+func (is *InteractiveService) Warn(msg string) {
+	if is.cs.desc.LogCritical == nil {
+		return
+	}
+	is.cs.desc.LogCritical(msg)
+}
+func (is *InteractiveService) Info(msg string) {
+	if is.cs.desc.Log == nil {
+		return
+	}
+	is.cs.desc.Log(msg)
+}
+func (is *InteractiveService) Debug(msg string) {
+	if is.cs.desc.Log == nil {
+		return
+	}
+	is.cs.desc.Log(msg)
+}
+func (is *InteractiveService) Trace(msg string) {
+	if is.cs.desc.Log == nil {
+		return
+	}
+	is.cs.desc.Log(msg)
 }
