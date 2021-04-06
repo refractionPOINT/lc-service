@@ -272,9 +272,21 @@ func TestCommand(t *testing.T) {
 		Log:         func(m string) { fmt.Println(m) },
 		LogCritical: func(m string) { fmt.Println(m) },
 		IsDebug:     true,
+		Commands: CommandsDescriptor{
+			Descriptors: []CommandDescriptor{
+				{
+					Name:    "commandOne",
+					Args:    Dict{},
+					Handler: testCommandOneCB,
+				},
+				{
+					Name:    "commandTwo",
+					Args:    Dict{},
+					Handler: testCommandTwoCB,
+				},
+			},
+		},
 	})
-	a.NoError(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
-	a.NoError(s.AddCommandHandler("commandTwo", Dict{}, testCommandTwoCB))
 	a.NoError(err)
 	a.NotNil(s)
 
@@ -300,8 +312,47 @@ func TestCommand(t *testing.T) {
 	a.Empty(resp.Error)
 	a.Equal(Dict{"from": "cbTwo"}, resp.Data)
 
-	a.Error(s.AddCommandHandler("", Dict{}, testCommandOneCB))
-	a.Error(s.AddCommandHandler("commandOne", Dict{}, testCommandOneCB))
-	a.Error(s.AddCommandHandler("commandThree", Dict{}, nil))
-	a.NoError(s.AddCommandHandler("commandThree", Dict{}, testCommandOneCB))
+	d := Descriptor{
+		Commands: CommandsDescriptor{
+			Descriptors: []CommandDescriptor{
+				{
+					Name:    "",
+					Args:    Dict{},
+					Handler: testCommandOneCB,
+				},
+			},
+		},
+	}
+	a.Error(d.IsValid())
+
+	d = Descriptor{
+		Commands: CommandsDescriptor{
+			Descriptors: []CommandDescriptor{
+				{
+					Name:    "commandOne",
+					Args:    Dict{},
+					Handler: testCommandOneCB,
+				},
+				{
+					Name:    "commandOne",
+					Args:    Dict{},
+					Handler: testCommandOneCB,
+				},
+			},
+		},
+	}
+	a.Error(d.IsValid())
+
+	d = Descriptor{
+		Commands: CommandsDescriptor{
+			Descriptors: []CommandDescriptor{
+				{
+					Name:    "commandOne",
+					Args:    Dict{},
+					Handler: nil,
+				},
+			},
+		},
+	}
+	a.Error(d.IsValid())
 }

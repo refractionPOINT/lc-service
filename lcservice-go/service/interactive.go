@@ -33,7 +33,7 @@ const (
       name: __%s`
 )
 
-type interactiveService struct {
+type InteractiveService struct {
 	cs *coreService
 
 	// Rule used to get responses back.
@@ -80,8 +80,8 @@ type TrackedTaskingOptions struct {
 	JobID   string
 }
 
-func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallback) (is *interactiveService, err error) {
-	is = &interactiveService{}
+func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallback) (is *InteractiveService, err error) {
+	is = &InteractiveService{}
 
 	// Install a D&R rule and a Detection subscription.
 	is.detectionName = fmt.Sprintf("svc-%s-ex", descriptor.Name)
@@ -116,21 +116,21 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 	return is, err
 }
 
-func (is *interactiveService) Init() error {
+func (is *InteractiveService) Init() error {
 	return is.cs.Init()
 }
 
-func (is *interactiveService) ProcessRequest(data map[string]interface{}, sig string) (Response, bool) {
+func (is *InteractiveService) ProcessRequest(data map[string]interface{}, sig string) (Response, bool) {
 	return is.cs.ProcessRequest(data, sig)
 }
 
-func (is *interactiveService) getCbHash(cb interface{}) string {
+func (is *InteractiveService) getCbHash(cb interface{}) string {
 	name := runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name()
 	h := md5.Sum([]byte(fmt.Sprintf("%s/%s", is.cs.desc.SecretKey, name)))
 	return hex.EncodeToString(h[:])[:8]
 }
 
-func (is *interactiveService) onDetection(r Request) Response {
+func (is *InteractiveService) onDetection(r Request) Response {
 	detection := inboundDetection{}
 	// Get the basic headers we use to tell if this is
 	// for the interactive service, or the user.
@@ -186,25 +186,25 @@ func parseInteractiveContext(invID string) (interactiveContext, bool) {
 	return ic, true
 }
 
-func (is *interactiveService) onOrgPer1H(r Request) Response {
+func (is *InteractiveService) onOrgPer1H(r Request) Response {
 	is.applyInteractiveRule(r.Org)
 
 	return is.originalOnOrgPer1H(r)
 }
 
-func (is *interactiveService) onOrgInstall(r Request) Response {
+func (is *InteractiveService) onOrgInstall(r Request) Response {
 	is.applyInteractiveRule(r.Org)
 
 	return is.originalOnOrgInstall(r)
 }
 
-func (is *interactiveService) onOrgUninstall(r Request) Response {
+func (is *InteractiveService) onOrgUninstall(r Request) Response {
 	// Remove interactive rules
 
 	return is.originalOnOrgUninstall(r)
 }
 
-func (is *interactiveService) applyInteractiveRule(org *lc.Organization) error {
+func (is *InteractiveService) applyInteractiveRule(org *lc.Organization) error {
 	c := lc.OrgConfig{
 		DRRules: is.interactiveRule,
 	}
@@ -217,10 +217,10 @@ func (is *interactiveService) applyInteractiveRule(org *lc.Organization) error {
 	return nil
 }
 
-func (is *interactiveService) TrackedTasking(sensor lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
+func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
 	cbHash := is.getCbHash(cb)
 	if _, ok := is.interactiveCallbacks[cbHash]; !ok {
-		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cb))
+		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cbHash))
 	}
 	serialCtx, err := json.Marshal(interactiveContext{
 		CallbackID: cbHash,
