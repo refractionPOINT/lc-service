@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
@@ -74,8 +76,8 @@ type Descriptor struct {
 	// Callbacks
 	Callbacks DescriptorCallbacks
 
-	// commands
-	commands commandsDescriptor
+	// Commands
+	Commands CommandsDescriptor
 }
 
 // Optional callbacks available.
@@ -116,4 +118,21 @@ type DescriptorCallbacks struct {
 	OnNewSensor ServiceCallback `json:"new_sensor"`
 
 	OnServiceError ServiceCallback `json:"service_error"`
+}
+
+func (d Descriptor) IsValid() error {
+	commandNames := map[string]struct{}{}
+	for _, command := range d.Commands.Descriptors {
+		if command.Name == "" {
+			return errors.New("command name cannot be empty")
+		}
+		if _, ok := commandNames[command.Name]; ok {
+			return fmt.Errorf("command %s implemented more than once", command.Name)
+		}
+		commandNames[command.Name] = struct{}{}
+		if command.Handler == nil {
+			return fmt.Errorf("command %s has a nil handler", command.Name)
+		}
+	}
+	return nil
 }

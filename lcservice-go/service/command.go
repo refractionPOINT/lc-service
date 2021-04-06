@@ -1,7 +1,7 @@
 package service
 
-type commandsDescriptor struct {
-	Descriptors []commandDescriptor `json:"commands"`
+type CommandsDescriptor struct {
+	Descriptors []CommandDescriptor `json:"commands"`
 }
 
 var commandAllowedRequestParamTypes = map[string]struct{}{
@@ -12,8 +12,8 @@ var commandAllowedRequestParamTypes = map[string]struct{}{
 }
 
 type CommandName = string
-type commandDescriptor struct {
-	Name    CommandName `json:"name"`
-	Args    Dict        `json:"args"`
-	handler ServiceCallback
+type CommandDescriptor struct {
+	Name    CommandName     `json:"name"`
+	Args    Dict            `json:"args"`
+	Handler ServiceCallback `json:"-"`
 }

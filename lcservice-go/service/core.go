@@ -40,6 +40,10 @@ type lcRequest struct {
 }
 
 func NewService(descriptor Descriptor) (*coreService, error) {
+	if err := descriptor.IsValid(); err != nil {
+		return nil, err
+	}
+
 	cs := &coreService{
 		desc:      descriptor,
 		startedAt: time.Now().Unix(),
@@ -94,7 +98,7 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 }
 
 type commandHandlerResolver struct {
-	commandsDesc *commandsDescriptor
+	commandsDesc *CommandsDescriptor
 	desc         *Descriptor
 }
 
@@ -122,7 +126,7 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	}
 	for _, commandHandler := range c.commandsDesc.Descriptors {
 		if commandName == commandHandler.Name {
-			return commandHandler.handler
+			return commandHandler.Handler
 		}
 	}
 	if c.desc.IsDebug {
@@ -228,7 +232,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 }
 
 func (cs *coreService) ProcessCommand(data Dict, sig string) (Response, bool) {
-	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.commands, desc: &cs.desc})
+	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.Commands, desc: &cs.desc})
 }
 
 func (cs *coreService) ProcessRequest(data Dict, sig string) (Response, bool) {
@@ -275,8 +279,8 @@ func (cs *coreService) cbHealth(r Request) Response {
 	}
 	sort.StringSlice(cbSupported).Sort()
 
-	commandsSupported := make(map[string]commandDescriptor, len(cs.desc.commands.Descriptors))
-	for _, commandDescriptor := range cs.desc.commands.Descriptors {
+	commandsSupported := make(map[string]CommandDescriptor, len(cs.desc.Commands.Descriptors))
+	for _, commandDescriptor := range cs.desc.Commands.Descriptors {
 		commandsSupported[commandDescriptor.Name] = commandDescriptor
 	}
 
@@ -357,24 +361,4 @@ func (cs coreService) Trace(msg string) {
 		return
 	}
 	cs.desc.Log(msg)
-}
-
-func (cs *coreService) AddCommandHandler(name CommandName, args Dict, handler ServiceCallback) error {
-	if name == "" {
-		return fmt.Errorf("Command name cannot be empty")
-	}
-	for _, desc := range cs.desc.commands.Descriptors {
-		if name == desc.Name {
-			return fmt.Errorf("Command already registered for that name %s", name)
-		}
-	}
-	if handler == nil {
-		return fmt.Errorf("Command handler is nil for %s", name)
-	}
-	cs.desc.commands.Descriptors = append(cs.desc.commands.Descriptors, commandDescriptor{
-		Name:    name,
-		Args:    args,
-		handler: handler,
-	})
-	return nil
 }

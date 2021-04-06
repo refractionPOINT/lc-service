@@ -29,9 +29,17 @@ func TestProcess(t *testing.T) {
 		Log:         func(m string) { fmt.Println(m) },
 		LogCritical: func(m string) { fmt.Printf("critial: %s\n", m) },
 		IsDebug:     true,
+		Commands: svc.CommandsDescriptor{
+			Descriptors: []svc.CommandDescriptor{
+				{
+					Name:    "testMe",
+					Args:    svc.Dict{"arg0": "arg0 description"},
+					Handler: testMeCB,
+				},
+			},
+		},
 	})
 	a.NoError(err)
-	a.NoError(s.AddCommandHandler("testMe", svc.Dict{"arg0": "arg0 description"}, testMeCB))
 
 	data := svc.Dict{
 		"etype": "health",

@@ -34,7 +34,7 @@ const (
 )
 
 type InteractiveService struct {
-	Cs *coreService
+	cs *coreService
 
 	// Rule used to get responses back.
 	detectionName   string
@@ -102,7 +102,7 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 	descriptor.Callbacks.OnOrgInstall = is.onOrgInstall
 	descriptor.Callbacks.OnOrgUninstall = is.onOrgUninstall
 
-	is.Cs, err = NewService(descriptor)
+	is.cs, err = NewService(descriptor)
 	if err != nil {
 		return nil, err
 	}
@@ -117,16 +117,16 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 }
 
 func (is *InteractiveService) Init() error {
-	return is.Cs.Init()
+	return is.cs.Init()
 }
 
 func (is *InteractiveService) ProcessRequest(data map[string]interface{}, sig string) (Response, bool) {
-	return is.Cs.ProcessRequest(data, sig)
+	return is.cs.ProcessRequest(data, sig)
 }
 
 func (is *InteractiveService) getCbHash(cb interface{}) string {
 	name := runtime.FuncForPC(reflect.ValueOf(cb).Pointer()).Name()
-	h := md5.Sum([]byte(fmt.Sprintf("%s/%s", is.Cs.desc.SecretKey, name)))
+	h := md5.Sum([]byte(fmt.Sprintf("%s/%s", is.cs.desc.SecretKey, name)))
 	return hex.EncodeToString(h[:])[:8]
 }
 
@@ -161,13 +161,13 @@ func (is *InteractiveService) onDetection(r Request) Response {
 
 	// Get the right callback.
 	if ic.CallbackID == "" {
-		is.Cs.desc.LogCritical(fmt.Sprintf("received interactive callback without callbackID: %s", detection.Routing.InvestigationID))
+		is.cs.desc.LogCritical(fmt.Sprintf("received interactive callback without callbackID: %s", detection.Routing.InvestigationID))
 		return is.originalOnDetection(r)
 	}
 
 	cb, ok := is.interactiveCallbacks[ic.CallbackID]
 	if !ok {
-		is.Cs.desc.LogCritical(fmt.Sprintf("received interactive callback with unknown callbackID: %s", detection.Routing.InvestigationID))
+		is.cs.desc.LogCritical(fmt.Sprintf("received interactive callback with unknown callbackID: %s", detection.Routing.InvestigationID))
 		return is.originalOnDetection(r)
 	}
 
@@ -211,7 +211,7 @@ func (is *InteractiveService) applyInteractiveRule(org *lc.Organization) error {
 	if _, err := org.SyncPush(c, lc.SyncOptions{
 		SyncDRRules: true,
 	}); err != nil {
-		is.Cs.desc.LogCritical(fmt.Sprintf("error syncing interactive rule: %v", err))
+		is.cs.desc.LogCritical(fmt.Sprintf("error syncing interactive rule: %v", err))
 		return err
 	}
 	return nil
@@ -220,7 +220,7 @@ func (is *InteractiveService) applyInteractiveRule(org *lc.Organization) error {
 func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
 	cbHash := is.getCbHash(cb)
 	if _, ok := is.interactiveCallbacks[cbHash]; !ok {
-		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cb))
+		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cbHash))
 	}
 	serialCtx, err := json.Marshal(interactiveContext{
 		CallbackID: cbHash,
