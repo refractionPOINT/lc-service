@@ -54,8 +54,8 @@ func (r *RequestParamDef) isValid() error {
 	if r.Description == "" {
 		return fmt.Errorf("parameter description is empty")
 	}
-	if _, ok := SupportedRequestParamTYpes[r.Type]; !ok {
-		return fmt.Errorf("parameter type '%v' is not supported (%v)", r.Type, SupportedRequestParamTYpes)
+	if _, ok := SupportedRequestParamTypes[r.Type]; !ok {
+		return fmt.Errorf("parameter type '%v' is not supported (%v)", r.Type, SupportedRequestParamTypes)
 	}
 	if r.Type == RequestParamTypes.Enum && len(r.Values) == 0 {
 		return fmt.Errorf("parameter is enum but no values provided")
@@ -87,7 +87,7 @@ var RequestParamTypes = struct {
 	Bool:   "bool",
 }
 
-var SupportedRequestParamTYpes = map[string]struct{}{
+var SupportedRequestParamTypes = map[string]struct{}{
 	RequestParamTypes.String: {},
 	RequestParamTypes.Enum:   {},
 	RequestParamTypes.Int:    {},
