@@ -32,8 +32,12 @@ func TestProcess(t *testing.T) {
 		Commands: svc.CommandsDescriptor{
 			Descriptors: []svc.CommandDescriptor{
 				{
-					Name:    "testMe",
-					Args:    svc.Dict{"arg0": "arg0 description"},
+					Name: "testMe",
+					Args: svc.CommandParams{
+						"arg0": svc.RequestParamDef{
+							Description: "arg0 description",
+						},
+					},
 					Handler: testMeCB,
 				},
 			},

@@ -4,16 +4,11 @@ type CommandsDescriptor struct {
 	Descriptors []CommandDescriptor `json:"commands"`
 }
 
-var commandAllowedRequestParamTypes = map[string]struct{}{
-	RequestParamTypeString: {},
-	RequestParamTypeEnum:   {},
-	RequestParamTypeInt:    {},
-	RequestParamTypeBool:   {},
-}
-
 type CommandName = string
+type CommandParams = RequestParams
 type CommandDescriptor struct {
-	Name    CommandName     `json:"name"`
-	Args    Dict            `json:"args"`
-	Handler ServiceCallback `json:"-"`
+	Name        CommandName     `json:"name"`
+	Description string          `json:"desc"`
+	Args        CommandParams   `json:"args"`
+	Handler     ServiceCallback `json:"-"`
 }
