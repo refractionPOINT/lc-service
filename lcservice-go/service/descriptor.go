@@ -50,12 +50,49 @@ type RequestParamDef struct {
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
-const (
-	RequestParamTypeString = "str"
-	RequestParamTypeEnum   = "enum"
-	RequestParamTypeInt    = "int"
-	RequestParamTypeBool   = "bool"
-)
+func (r *RequestParamDef) isValid() error {
+	if r.Description == "" {
+		return fmt.Errorf("parameter description is empty")
+	}
+	if _, ok := SupportedRequestParamTYpes[r.Type]; !ok {
+		return fmt.Errorf("parameter type '%v' is not supported (%v)", r.Type, SupportedRequestParamTYpes)
+	}
+	if r.Type == RequestParamTypes.Enum && len(r.Values) == 0 {
+		return fmt.Errorf("parameter is enum but no values provided")
+	}
+	return nil
+}
+
+func requestParamsIsValid(params RequestParams) error {
+	for paramName, paramDef := range params {
+		if paramName == "" {
+			return fmt.Errorf("parameter name is empty")
+		}
+		if err := paramDef.isValid(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+var RequestParamTypes = struct {
+	String RequestParamType
+	Enum   RequestParamType
+	Int    RequestParamType
+	Bool   RequestParamType
+}{
+	String: "str",
+	Enum:   "enum",
+	Int:    "int",
+	Bool:   "bool",
+}
+
+var SupportedRequestParamTYpes = map[string]struct{}{
+	RequestParamTypes.String: {},
+	RequestParamTypes.Enum:   {},
+	RequestParamTypes.Int:    {},
+	RequestParamTypes.Bool:   {},
+}
 
 type Descriptor struct {
 	// Basic info
@@ -125,6 +162,9 @@ func (d Descriptor) IsValid() error {
 	for _, command := range d.Commands.Descriptors {
 		if command.Name == "" {
 			return errors.New("command name cannot be empty")
+		}
+		if err := requestParamsIsValid(command.Args); err != nil {
+			return err
 		}
 		if _, ok := commandNames[command.Name]; ok {
 			return fmt.Errorf("command %s implemented more than once", command.Name)
