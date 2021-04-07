@@ -58,7 +58,10 @@ func (r *RequestParamDef) isValid() error {
 		return fmt.Errorf("parameter type '%v' is not supported (%v)", r.Type, SupportedRequestParamTypes)
 	}
 	if r.Type == RequestParamTypes.Enum && len(r.Values) == 0 {
-		return fmt.Errorf("parameter is enum but no values provided")
+		return fmt.Errorf("parameter type is enum but no values provided")
+	}
+	if r.Type != RequestParamTypes.Enum && len(r.Values) != 0 {
+		return fmt.Errorf("paramter type is not enum but has values provided")
 	}
 	return nil
 }
