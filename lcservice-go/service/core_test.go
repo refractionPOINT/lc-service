@@ -276,12 +276,12 @@ func TestCommand(t *testing.T) {
 			Descriptors: []CommandDescriptor{
 				{
 					Name:    "commandOne",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: testCommandOneCB,
 				},
 				{
 					Name:    "commandTwo",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: testCommandTwoCB,
 				},
 			},
@@ -317,7 +317,7 @@ func TestCommand(t *testing.T) {
 			Descriptors: []CommandDescriptor{
 				{
 					Name:    "",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: testCommandOneCB,
 				},
 			},
@@ -330,12 +330,12 @@ func TestCommand(t *testing.T) {
 			Descriptors: []CommandDescriptor{
 				{
 					Name:    "commandOne",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: testCommandOneCB,
 				},
 				{
 					Name:    "commandOne",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: testCommandOneCB,
 				},
 			},
@@ -348,7 +348,7 @@ func TestCommand(t *testing.T) {
 			Descriptors: []CommandDescriptor{
 				{
 					Name:    "commandOne",
-					Args:    Dict{},
+					Args:    CommandParams{},
 					Handler: nil,
 				},
 			},
