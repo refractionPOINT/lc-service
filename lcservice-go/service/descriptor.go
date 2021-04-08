@@ -166,6 +166,9 @@ func (d Descriptor) IsValid() error {
 		if command.Name == "" {
 			return errors.New("command name cannot be empty")
 		}
+		if command.Description == "" {
+			return fmt.Errorf("command '%s' description is empty", command.Name)
+		}
 		if err := requestParamsIsValid(command.Args); err != nil {
 			return err
 		}
