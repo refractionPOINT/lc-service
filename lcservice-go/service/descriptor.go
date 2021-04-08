@@ -46,7 +46,7 @@ type RequestParamDef struct {
 	IsRequired  bool             `json:"is_required"`
 
 	// Only for "enum" Type
-	Values []string `json:"values"`
+	Values []string `json:"values,omitempty"`
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
