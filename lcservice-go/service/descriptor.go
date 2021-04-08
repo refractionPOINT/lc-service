@@ -46,7 +46,7 @@ type RequestParamDef struct {
 	IsRequired  bool             `json:"is_required"`
 
 	// Only for "enum" Type
-	Values []string `json:"values"`
+	Values []string `json:"values,omitempty"`
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
@@ -165,6 +165,9 @@ func (d Descriptor) IsValid() error {
 	for _, command := range d.Commands.Descriptors {
 		if command.Name == "" {
 			return errors.New("command name cannot be empty")
+		}
+		if command.Description == "" {
+			return fmt.Errorf("command '%s' description is empty", command.Name)
 		}
 		if err := requestParamsIsValid(command.Args); err != nil {
 			return err
