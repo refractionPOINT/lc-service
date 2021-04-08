@@ -174,7 +174,9 @@ func (is *InteractiveService) onDetection(r Request) Response {
 		is.cs.desc.LogCritical(fmt.Sprintf("received interactive callback with unknown callbackID: %s", detection.Routing.InvestigationID))
 		return is.originalOnDetection(r)
 	}
-
+	if cb == nil {
+		return NewErrorResponse(fmt.Errorf("not implemented"))
+	}
 	return cb(req)
 }
 
@@ -191,20 +193,29 @@ func parseInteractiveContext(invID string) (interactiveContext, bool) {
 }
 
 func (is *InteractiveService) onOrgPer1H(r Request) Response {
-	is.applyInteractiveRule(r.Org)
+	if is.originalOnOrgPer1H == nil {
+		return NewErrorResponse(fmt.Errorf("not implemented"))
+	}
 
+	is.applyInteractiveRule(r.Org)
 	return is.originalOnOrgPer1H(r)
 }
 
 func (is *InteractiveService) onOrgInstall(r Request) Response {
-	is.applyInteractiveRule(r.Org)
+	if is.originalOnOrgInstall == nil {
+		return NewErrorResponse(fmt.Errorf("not implemented"))
+	}
 
+	is.applyInteractiveRule(r.Org)
 	return is.originalOnOrgInstall(r)
 }
 
 func (is *InteractiveService) onOrgUninstall(r Request) Response {
-	// Remove interactive rules
+	if is.originalOnOrgUninstall == nil {
+		return NewErrorResponse(fmt.Errorf("not implemented"))
+	}
 
+	// Remove interactive rules
 	return is.originalOnOrgUninstall(r)
 }
 
