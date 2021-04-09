@@ -7,8 +7,8 @@ github.com/google/uuid v1.2.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210405212032-6799f5d3eb4d h1:fC396T7dxuCDaz493s46kDkFWrQ85wddnAF2JQrvmzo=
-github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210405212032-6799f5d3eb4d/go.mod h1:EoshFrzawsMdzMWsZLCWNlsCYiHl4Du8D60/1i9wUR4=
+github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210409174321-b59bfc69d1aa h1:RG97Itps/iEK9h+cKAN9cLKLDhIFWtWjhYWrH4VF6C0=
+github.com/refractionPOINT/go-limacharlie/limacharlie v0.0.0-20210409174321-b59bfc69d1aa/go.mod h1:EoshFrzawsMdzMWsZLCWNlsCYiHl4Du8D60/1i9wUR4=
 github.com/rs/xid v1.2.1/go.mod h1:+uKXf+4Djp6Md1KODXJxgGQPKngRmWyn10oCKFzNHOQ=
 github.com/rs/zerolog v1.20.0 h1:38k9hgtUBdxFwE34yS8rTHmHBa4eN16E4DJlv177LNs=
 github.com/rs/zerolog v1.20.0/go.mod h1:IzD0RJ65iWH0w97OQQebJEvTZYvsCUm9WVLWBQrJRjo=
