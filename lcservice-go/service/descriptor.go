@@ -16,6 +16,30 @@ type Request struct {
 	Event    RequestEvent
 }
 
+func (r Request) GetRoomID() (string, error) {
+	eventRID, found := r.Event.Data["rid"]
+	if !found {
+		return "", fmt.Errorf("missing rid (roomID)")
+	}
+	rid, ok := eventRID.(string)
+	if !ok {
+		return "", fmt.Errorf("rid is not a string")
+	}
+	return rid, nil
+}
+
+func (r Request) GetCommandID() (string, error) {
+	eventCID, found := r.Event.Data["cid"]
+	if !found {
+		return "", fmt.Errorf("missing cid (commandID)")
+	}
+	cid, ok := eventCID.(string)
+	if !ok {
+		return "", fmt.Errorf("cid is not a string")
+	}
+	return cid, nil
+}
+
 type RequestEvent struct {
 	Type string
 	ID   string
