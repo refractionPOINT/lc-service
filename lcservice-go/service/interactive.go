@@ -193,24 +193,34 @@ func parseInteractiveContext(invID string) (interactiveContext, bool) {
 }
 
 func (is *InteractiveService) onOrgPer1H(r Request) Response {
+	if err := is.applyInteractiveRule(r.Org); err != nil {
+		is.cs.desc.LogCritical(fmt.Sprintf("onOrgPer1H.applyInteractiveRule: %v", err))
+	}
+
 	if is.originalOnOrgPer1H == nil {
 		return NewErrorResponse(fmt.Errorf("not implemented"))
 	}
 
-	is.applyInteractiveRule(r.Org)
 	return is.originalOnOrgPer1H(r)
 }
 
 func (is *InteractiveService) onOrgInstall(r Request) Response {
+	if err := is.applyInteractiveRule(r.Org); err != nil {
+		is.cs.desc.LogCritical(fmt.Sprintf("onOrgInstall.applyInteractiveRule: %v", err))
+	}
+
 	if is.originalOnOrgInstall == nil {
 		return NewErrorResponse(fmt.Errorf("not implemented"))
 	}
 
-	is.applyInteractiveRule(r.Org)
 	return is.originalOnOrgInstall(r)
 }
 
 func (is *InteractiveService) onOrgUninstall(r Request) Response {
+	if err := is.removeInteractiveRule(r.Org); err != nil {
+		is.cs.desc.LogCritical(fmt.Sprintf("onOrgUninstall.removeInteractiveRule: %v", err))
+	}
+
 	if is.originalOnOrgUninstall == nil {
 		return NewErrorResponse(fmt.Errorf("not implemented"))
 	}
@@ -227,6 +237,14 @@ func (is *InteractiveService) applyInteractiveRule(org *lc.Organization) error {
 		SyncDRRules: true,
 	}); err != nil {
 		is.cs.desc.LogCritical(fmt.Sprintf("error syncing interactive rule: %v", err))
+		return err
+	}
+	return nil
+}
+
+func (is *InteractiveService) removeInteractiveRule(org *lc.Organization) error {
+	if err := org.DRDelRule(is.detectionName); err != nil {
+		is.cs.desc.LogCritical(fmt.Sprintf("error removing interactive rule: %v", err))
 		return err
 	}
 	return nil
