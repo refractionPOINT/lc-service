@@ -1,7 +1,6 @@
 package service
 
 import (
-	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
@@ -15,53 +14,6 @@ import (
 const (
 	testSecretKey = "abc"
 )
-
-func TestAuth(t *testing.T) {
-	s, err := NewService(Descriptor{
-		SecretKey: testSecretKey,
-		Callbacks: DescriptorCallbacks{
-			OnOrgInstall: func(r Request) Response {
-				return Response{}
-			},
-			OnOrgUninstall: func(r Request) Response {
-				return Response{}
-			},
-		},
-	})
-	if err != nil {
-		t.Errorf("NewService: %v", err)
-	}
-
-	testData := Dict{
-		"a": "a",
-		"A": "c",
-		"b": "b",
-	}
-
-	if _, isAccepted := s.ProcessRequest(testData, "nope"); isAccepted {
-		t.Error("invalid sig accepted")
-	}
-
-	sig := computeSig(testData)
-
-	if _, isAccepted := s.ProcessRequest(testData, sig); !isAccepted {
-		t.Error("valid sig not accepted")
-	}
-}
-
-func computeSig(data Dict) string {
-	jsonIn, err := json.Marshal(data)
-	if err != nil {
-		return ""
-	}
-	jsonCompat := lcCompatibleJSONMarshal(jsonIn)
-	mac := hmac.New(sha256.New, []byte(testSecretKey))
-	if _, err := mac.Write(jsonCompat); err != nil {
-		return ""
-	}
-	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
-	return string(jsonCompatSig)
-}
 
 func TestHealth(t *testing.T) {
 	params := map[string]RequestParamDef{"p1": {
@@ -96,12 +48,7 @@ func TestHealth(t *testing.T) {
 		Data:     Dict{},
 	})
 
-	sig := computeSig(testData)
-
-	resp, isAccepted := s.ProcessRequest(testData, sig)
-	if !isAccepted {
-		t.Error("valid sig not accepted")
-	}
+	resp := s.ProcessRequest(testData)
 	resp.Data["start_time"] = 0
 
 	if !compareResponses(resp, Response{
@@ -275,14 +222,16 @@ func TestCommand(t *testing.T) {
 		Commands: CommandsDescriptor{
 			Descriptors: []CommandDescriptor{
 				{
-					Name:    "commandOne",
-					Args:    CommandParams{},
-					Handler: testCommandOneCB,
+					Name:        "commandOne",
+					Args:        CommandParams{},
+					Handler:     testCommandOneCB,
+					Description: "cmd1",
 				},
 				{
-					Name:    "commandTwo",
-					Args:    CommandParams{},
-					Handler: testCommandTwoCB,
+					Name:        "commandTwo",
+					Args:        CommandParams{},
+					Handler:     testCommandTwoCB,
+					Description: "cmd2",
 				},
 			},
 		},
@@ -293,22 +242,26 @@ func TestCommand(t *testing.T) {
 	testData := makeRequest(lcRequest{
 		Version: 1,
 		Type:    "command",
-		Data:    Dict{"command_name": "commandOne"},
+		Data: Dict{
+			"command_name": "commandOne",
+			"rid":          "123",
+			"cid":          "456",
+		},
 	})
-	sig := computeSig(testData)
-	resp, accepted := s.ProcessCommand(testData, sig)
-	a.True(accepted)
+	resp := s.ProcessCommand(testData)
 	a.Empty(resp.Error)
 	a.Equal(Dict{"from": "cbOne"}, resp.Data)
 
 	testData = makeRequest(lcRequest{
 		Version: 1,
 		Type:    "command",
-		Data:    Dict{"command_name": "commandTwo"},
+		Data: Dict{
+			"command_name": "commandTwo",
+			"rid":          "123",
+			"cid":          "456",
+		},
 	})
-	sig = computeSig(testData)
-	resp, accepted = s.ProcessCommand(testData, sig)
-	a.True(accepted)
+	resp = s.ProcessCommand(testData)
 	a.Empty(resp.Error)
 	a.Equal(Dict{"from": "cbTwo"}, resp.Data)
 

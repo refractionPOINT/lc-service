@@ -119,12 +119,16 @@ func (is *InteractiveService) Init() error {
 	return is.cs.Init()
 }
 
-func (is *InteractiveService) ProcessRequest(data map[string]interface{}, sig string) (Response, bool) {
-	return is.cs.ProcessRequest(data, sig)
+func (is *InteractiveService) GetSecretKey() []byte {
+	return []byte(is.cs.desc.SecretKey)
 }
 
-func (is *InteractiveService) ProcessCommand(commandArguments map[string]interface{}, sig string) (Response, bool) {
-	return is.cs.ProcessCommand(commandArguments, sig)
+func (is *InteractiveService) ProcessRequest(data map[string]interface{}) Response {
+	return is.cs.ProcessRequest(data)
+}
+
+func (is *InteractiveService) ProcessCommand(commandArguments map[string]interface{}) Response {
+	return is.cs.ProcessCommand(commandArguments)
 }
 
 func (is *InteractiveService) getCbHash(cb interface{}) string {

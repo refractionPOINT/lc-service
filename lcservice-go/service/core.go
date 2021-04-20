@@ -2,10 +2,6 @@ package service
 
 import (
 	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
@@ -62,6 +58,10 @@ func NewService(descriptor Descriptor) (*coreService, error) {
 
 func (cs *coreService) Init() error {
 	return nil
+}
+
+func (cs *coreService) GetSecretKey() []byte {
+	return []byte(cs.desc.SecretKey)
 }
 
 type handlerResolver interface {
@@ -150,6 +150,11 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 		return err
 	}
 
+	// Test compat, ignore if no SDK.
+	if request.Org == nil {
+		return nil
+	}
+
 	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
 		Type: lc.CommsMessageTypes.CommandAck,
 		Content: Dict{
@@ -173,31 +178,22 @@ func (cs *coreService) logError(errStr string) {
 	}
 }
 
-func (cs *coreService) processGenericRequest(data Dict, sig string, resolver handlerResolver) (Response, bool) {
+func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver) Response {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
 	cs.log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
 
-	// Validate the HMAC signature.
-	if !cs.verifyOrigin(data, sig) {
-		// This is the only special case where
-		// we return isAccepted = false to tell
-		// the parent that the signature is
-		// specifically invalid.
-		return Response{}, false
-	}
-
 	// Parse the request format.
 	req := lcRequest{}
 	if err := DictToStruct(data, &req); err != nil {
-		return NewErrorResponse(fmt.Errorf("invalid format: %v", err)), true
+		return NewErrorResponse(fmt.Errorf("invalid format: %v", err))
 	}
 
 	// Check we can work with this version of the protocol.
 	if req.Version > PROTOCOL_VERSION {
-		return NewErrorResponse(fmt.Errorf("unsupported version (> %d)", PROTOCOL_VERSION)), true
+		return NewErrorResponse(fmt.Errorf("unsupported version (> %d)", PROTOCOL_VERSION))
 	}
 
 	if cs.desc.IsDebug {
@@ -210,7 +206,7 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
 			cs.logError("deadline exceeded")
-			return NewErrorResponse(fmt.Errorf("deadline exceeded")), true
+			return NewErrorResponse(fmt.Errorf("deadline exceeded"))
 		}
 	}
 
@@ -227,14 +223,14 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 	parsedData, err := resolver.parse(serviceRequest.Event)
 	if err != nil {
 		cs.logError(err.Error())
-		return NewErrorResponse(err), true
+		return NewErrorResponse(err)
 	}
 	serviceRequest.Event.Data = parsedData
 
 	handler := resolver.get(serviceRequest.Event)
 	if handler == nil {
 		cs.logError(fmt.Sprintf("resolver not implemented for '%s'", serviceRequest.Event))
-		return NewErrorResponse(fmt.Errorf("not implemented")), true
+		return NewErrorResponse(fmt.Errorf("not implemented"))
 	}
 
 	// health request will not be providing a jwt - if you want an org provide an oid and a jwt
@@ -245,12 +241,12 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 			JWT: req.JWT,
 		}, cs); err != nil {
 			cs.logError(err.Error())
-			return NewErrorResponse(err), true
+			return NewErrorResponse(err)
 		}
 	}
 
 	if err := resolver.preHandlerHook(serviceRequest); err != nil {
-		return NewErrorResponse(err), true
+		return NewErrorResponse(err)
 	}
 
 	// Send it.
@@ -258,15 +254,15 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 	if cs.desc.IsDebug {
 		cs.desc.Log(fmt.Sprintf("REQ (%s) result: err(%s)", req.MsgID, resp.Error))
 	}
-	return resp, true
+	return resp
 }
 
-func (cs *coreService) ProcessCommand(data Dict, sig string) (Response, bool) {
-	return cs.processGenericRequest(data, sig, &commandHandlerResolver{commandsDesc: &cs.desc.Commands, desc: &cs.desc})
+func (cs *coreService) ProcessCommand(data Dict) Response {
+	return cs.processGenericRequest(data, &commandHandlerResolver{commandsDesc: &cs.desc.Commands, desc: &cs.desc})
 }
 
-func (cs *coreService) ProcessRequest(data Dict, sig string) (Response, bool) {
-	return cs.processGenericRequest(data, sig, &requestHandlerResolver{cs: cs})
+func (cs *coreService) ProcessRequest(data Dict) Response {
+	return cs.processGenericRequest(data, &requestHandlerResolver{cs: cs})
 }
 
 func lcCompatibleJSONMarshal(d []byte) []byte {
@@ -279,22 +275,6 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 	// replace ',"' -> ', "'
 	res = bytes.ReplaceAll(res, []byte(`,"`), []byte(`, "`))
 	return res
-}
-
-func (cs *coreService) verifyOrigin(data Dict, sig string) bool {
-	jsonIn, err := json.Marshal(data)
-	if err != nil {
-		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.json.Marshal: %v", err))
-		return false
-	}
-	jsonCompat := lcCompatibleJSONMarshal(jsonIn)
-	mac := hmac.New(sha256.New, []byte(cs.desc.SecretKey))
-	if _, err := mac.Write(jsonCompat); err != nil {
-		cs.desc.LogCritical(fmt.Sprintf("verifyOrigin.hmac.Write: %v", err))
-		return false
-	}
-	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
-	return hmac.Equal(jsonCompatSig, []byte(sig))
 }
 
 func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
