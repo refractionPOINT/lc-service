@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -70,12 +69,10 @@ func process(service Service, w http.ResponseWriter, r *http.Request) {
 }
 
 func verifyOrigin(data []byte, sig string, secretKey []byte) bool {
-	fmt.Printf("verify on\n%+v\n%s\n%s\n%s\n", data, string(data), sig, string(secretKey))
 	mac := hmac.New(sha256.New, secretKey)
 	if _, err := mac.Write(data); err != nil {
 		return false
 	}
 	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
-	fmt.Println(string(jsonCompatSig))
 	return hmac.Equal(jsonCompatSig, []byte(sig))
 }
