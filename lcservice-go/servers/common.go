@@ -1,7 +1,12 @@
 package servers
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	svc "github.com/refractionPOINT/lc-service/lcservice-go/service"
@@ -14,11 +19,7 @@ func encodeResponse(resp svc.Response, w http.ResponseWriter) {
 	}
 }
 
-func handleResponse(resp svc.Response, isAccepted bool, w http.ResponseWriter) {
-	if !isAccepted {
-		w.WriteHeader(http.StatusPreconditionFailed)
-		return
-	}
+func handleResponse(resp svc.Response, w http.ResponseWriter) {
 	if resp.Error != "" {
 		w.WriteHeader(http.StatusBadRequest)
 		encodeResponse(resp, w)
@@ -30,12 +31,26 @@ func handleResponse(resp svc.Response, isAccepted bool, w http.ResponseWriter) {
 }
 
 func process(service Service, w http.ResponseWriter, r *http.Request) {
+	// Read all the incoming body.
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Check the signature.
+	sig := r.Header.Get("lc-svc-sig")
+	if !verifyOrigin(b, sig, service.GetSecretKey()) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	// Deserialize content.
 	d := map[string]interface{}{}
-	if err := json.NewDecoder(r.Body).Decode(&d); err != nil {
+	if err := json.Unmarshal(b, &d); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	sig := r.Header.Get("lc-svc-sig")
 
 	requestTypeValue, ok := d["etype"]
 	if !ok {
@@ -44,12 +59,23 @@ func process(service Service, w http.ResponseWriter, r *http.Request) {
 	}
 
 	if requestTypeValue == "command" {
-		resp, isAccepted := service.ProcessCommand(d, sig)
-		handleResponse(resp, isAccepted, w)
+		resp := service.ProcessCommand(d)
+		handleResponse(resp, w)
 		return
 	}
 
 	// it's not a command, then it's a request
-	resp, isAccepted := service.ProcessRequest(d, sig)
-	handleResponse(resp, isAccepted, w)
+	resp := service.ProcessRequest(d)
+	handleResponse(resp, w)
+}
+
+func verifyOrigin(data []byte, sig string, secretKey []byte) bool {
+	fmt.Printf("verify on\n%+v\n%s\n%s\n%s\n", data, string(data), sig, string(secretKey))
+	mac := hmac.New(sha256.New, secretKey)
+	if _, err := mac.Write(data); err != nil {
+		return false
+	}
+	jsonCompatSig := []byte(hex.EncodeToString(mac.Sum(nil)))
+	fmt.Println(string(jsonCompatSig))
+	return hmac.Equal(jsonCompatSig, []byte(sig))
 }

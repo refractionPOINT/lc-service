@@ -1,3 +1,6 @@
 steps:
   - name: 'gcr.io/${PROJECT_ID}/pytest_3'
     args: [ '-v', 'tests' ]
+  - name: 'golang'
+    dir: lcservice-go
+    args: ['go', 'test', '.', '-v']
