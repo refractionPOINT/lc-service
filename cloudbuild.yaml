@@ -3,4 +3,4 @@ steps:
     args: [ '-v', 'tests' ]
   - name: 'golang'
     dir: lcservice-go
-    args: ['go', 'test', '.', '-v']
+    args: ['go', 'test', './...', '-v']
