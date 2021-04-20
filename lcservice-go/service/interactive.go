@@ -89,7 +89,7 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 	if err := yaml.Unmarshal([]byte(templatedRule), &is.interactiveRule); err != nil {
 		panic(fmt.Sprintf("error parsing interactive rule (%v): %s", err, templatedRule))
 	}
-	descriptor.DetectionsSubscribed = append(descriptor.DetectionsSubscribed, is.detectionName)
+	descriptor.DetectionsSubscribed = append(descriptor.DetectionsSubscribed, fmt.Sprintf("__%s", is.detectionName))
 
 	// Overload a few callbacks.
 	is.originalOnDetection = descriptor.Callbacks.OnDetection
