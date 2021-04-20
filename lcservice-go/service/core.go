@@ -68,6 +68,7 @@ type handlerResolver interface {
 	getType() string
 	parse(requestEvent RequestEvent) (Dict, error)
 	get(requestEvent RequestEvent) ServiceCallback
+	preHandlerHook(request Request) error
 }
 
 type requestHandlerResolver struct {
@@ -95,6 +96,10 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 		return nil
 	}
 	return handler
+}
+
+func (r *requestHandlerResolver) preHandlerHook(request Request) error {
+	return nil
 }
 
 type commandHandlerResolver struct {
@@ -131,6 +136,27 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	}
 	if c.desc.IsDebug {
 		c.desc.Log(fmt.Sprintf("no handler found for '%s'", commandName))
+	}
+	return nil
+}
+
+func (r *commandHandlerResolver) preHandlerHook(request Request) error {
+	rid, err := request.GetRoomID()
+	if err != nil {
+		return err
+	}
+	cid, err := request.GetCommandID()
+	if err != nil {
+		return err
+	}
+
+	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
+		Type: lc.CommsMessageTypes.CommandAck,
+		Content: Dict{
+			"cid": cid,
+		},
+	}); err != nil {
+		return err
 	}
 	return nil
 }
@@ -221,6 +247,10 @@ func (cs *coreService) processGenericRequest(data Dict, sig string, resolver han
 			cs.logError(err.Error())
 			return NewErrorResponse(err), true
 		}
+	}
+
+	if err := resolver.preHandlerHook(serviceRequest); err != nil {
+		return NewErrorResponse(err), true
 	}
 
 	// Send it.
