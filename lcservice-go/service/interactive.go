@@ -17,7 +17,6 @@ import (
 const (
 	interactiveRuleTemplate = `
 %s:
-  namespace: replicant
   detect:
     op: and
     rules:
