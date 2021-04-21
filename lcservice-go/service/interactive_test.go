@@ -46,12 +46,7 @@ func TestInteractive(t *testing.T) {
 		Data:     Dict{},
 	})
 
-	sig := computeSig(testData)
-
-	resp, isAccepted := s.ProcessRequest(testData, sig)
-	if !isAccepted {
-		t.Error("valid sig not accepted")
-	}
+	resp := s.ProcessRequest(testData)
 	resp.Data["start_time"] = 0
 
 	if !compareResponses(resp, Response{
@@ -62,7 +57,7 @@ func TestInteractive(t *testing.T) {
 			"start_time":        0,
 			"mtd": Dict{
 				"request_params":       params,
-				"detect_subscriptions": []string{"d1", "d2", "svc-testService-ex"},
+				"detect_subscriptions": []string{"d1", "d2", "__svc-testService-ex"},
 				"callbacks":            []string{"detection", "health", "org_install", "org_per_1h", "org_uninstall"},
 				"commands":             Dict{},
 			},
@@ -98,12 +93,8 @@ func TestInteractive(t *testing.T) {
 			},
 		},
 	})
-	sig = computeSig(testData)
 
-	resp, isAccepted = s.ProcessRequest(testData, sig)
-	if !isAccepted {
-		t.Error("valid sig not accepted")
-	}
+	resp = s.ProcessRequest(testData)
 
 	if !compareResponses(resp, Response{
 		IsSuccess: true,
