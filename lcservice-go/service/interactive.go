@@ -63,7 +63,8 @@ type InteractiveCallback = func(InteractiveRequest) Response
 // between Services and LimaCharlie.
 type interactiveContext struct {
 	CallbackID string `json:"cb"`
-	JobID      string `json:"j"`
+	JobID      string `json:"j,omitempty"`
+	SessionID  string `json:"s,omitempty"`
 	Context    Dict   `json:"c"`
 }
 
@@ -75,8 +76,9 @@ type inboundDetection struct {
 }
 
 type TrackedTaskingOptions struct {
-	Context Dict
-	JobID   string
+	Context   Dict
+	JobID     string
+	SessionID string
 }
 
 func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallback) (is *InteractiveService, err error) {
@@ -261,6 +263,7 @@ func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opt
 	serialCtx, err := json.Marshal(interactiveContext{
 		CallbackID: cbHash,
 		JobID:      opts.JobID,
+		SessionID:  opts.SessionID,
 		Context:    opts.Context,
 	})
 	if err != nil {
