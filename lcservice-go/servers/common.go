@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"io"
+	"io/ioutil"
 	"net/http"
 
 	svc "github.com/refractionPOINT/lc-service/lcservice-go/service"
@@ -31,7 +31,7 @@ func handleResponse(resp svc.Response, w http.ResponseWriter) {
 
 func process(service Service, w http.ResponseWriter, r *http.Request) {
 	// Read all the incoming body.
-	b, err := io.ReadAll(r.Body)
+	b, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusNoContent)
 		return
