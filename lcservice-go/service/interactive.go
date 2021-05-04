@@ -33,7 +33,7 @@ __%s:
 )
 
 type InteractiveService struct {
-	cs *coreService
+	cs *CoreService
 
 	// Rule used to get responses back.
 	detectionName   string

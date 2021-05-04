@@ -16,7 +16,7 @@ const (
 	PROTOCOL_VERSION = 1
 )
 
-type coreService struct {
+type CoreService struct {
 	desc Descriptor
 
 	callsInProgress uint32
@@ -35,12 +35,12 @@ type lcRequest struct {
 	Data     Dict    `json:"data"`
 }
 
-func NewService(descriptor Descriptor) (*coreService, error) {
+func NewService(descriptor Descriptor) (*CoreService, error) {
 	if err := descriptor.IsValid(); err != nil {
 		return nil, err
 	}
 
-	cs := &coreService{
+	cs := &CoreService{
 		desc:      descriptor,
 		startedAt: time.Now().Unix(),
 	}
@@ -56,11 +56,11 @@ func NewService(descriptor Descriptor) (*coreService, error) {
 	return cs, nil
 }
 
-func (cs *coreService) Init() error {
+func (cs *CoreService) Init() error {
 	return nil
 }
 
-func (cs *coreService) GetSecretKey() []byte {
+func (cs *CoreService) GetSecretKey() []byte {
 	return []byte(cs.desc.SecretKey)
 }
 
@@ -72,7 +72,7 @@ type handlerResolver interface {
 }
 
 type requestHandlerResolver struct {
-	cs *coreService
+	cs *CoreService
 }
 
 func (r *requestHandlerResolver) getType() string {
@@ -166,24 +166,24 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 	return nil
 }
 
-func (cs *coreService) log(log string) {
+func (cs *CoreService) Log(log string) {
 	if cs.desc.IsDebug {
 		cs.desc.Log(log)
 	}
 }
 
-func (cs *coreService) logError(errStr string) {
+func (cs *CoreService) LogError(errStr string) {
 	if cs.desc.IsDebug {
 		cs.desc.LogCritical(errStr)
 	}
 }
 
-func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver) Response {
+func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver) Response {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
-	cs.log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
+	cs.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
 
 	// Parse the request format.
 	req := lcRequest{}
@@ -205,7 +205,7 @@ func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver
 	if req.Deadline != 0 {
 		deadline := time.Unix(int64(math.Trunc(req.Deadline)), 0)
 		if time.Now().After(deadline) {
-			cs.logError("deadline exceeded")
+			cs.LogError("deadline exceeded")
 			return NewErrorResponse(fmt.Errorf("deadline exceeded"))
 		}
 	}
@@ -222,14 +222,14 @@ func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver
 	var err error
 	parsedData, err := resolver.parse(serviceRequest.Event)
 	if err != nil {
-		cs.logError(err.Error())
+		cs.LogError(err.Error())
 		return NewErrorResponse(err)
 	}
 	serviceRequest.Event.Data = parsedData
 
 	handler := resolver.get(serviceRequest.Event)
 	if handler == nil {
-		cs.logError(fmt.Sprintf("resolver not implemented for '%s'", serviceRequest.Event))
+		cs.LogError(fmt.Sprintf("resolver not implemented for '%s'", serviceRequest.Event))
 		return NewErrorResponse(fmt.Errorf("not implemented"))
 	}
 
@@ -240,7 +240,7 @@ func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver
 			OID: req.OID,
 			JWT: req.JWT,
 		}, cs); err != nil {
-			cs.logError(err.Error())
+			cs.LogError(err.Error())
 			return NewErrorResponse(err)
 		}
 	}
@@ -257,11 +257,11 @@ func (cs *coreService) processGenericRequest(data Dict, resolver handlerResolver
 	return resp
 }
 
-func (cs *coreService) ProcessCommand(data Dict) Response {
+func (cs *CoreService) ProcessCommand(data Dict) Response {
 	return cs.processGenericRequest(data, &commandHandlerResolver{commandsDesc: &cs.desc.Commands, desc: &cs.desc})
 }
 
-func (cs *coreService) ProcessRequest(data Dict) Response {
+func (cs *CoreService) ProcessRequest(data Dict) Response {
 	return cs.processGenericRequest(data, &requestHandlerResolver{cs: cs})
 }
 
@@ -277,12 +277,12 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 	return res
 }
 
-func (cs *coreService) getHandler(reqType string) (ServiceCallback, bool) {
+func (cs *CoreService) getHandler(reqType string) (ServiceCallback, bool) {
 	cb, ok := cs.cbMap[reqType]
 	return cb, ok
 }
 
-func (cs *coreService) cbHealth(r Request) Response {
+func (cs *CoreService) cbHealth(r Request) Response {
 	cbSupported := []string{}
 	for k := range cs.cbMap {
 		cbSupported = append(cbSupported, k)
@@ -310,7 +310,7 @@ func (cs *coreService) cbHealth(r Request) Response {
 	}
 }
 
-func (cs *coreService) buildCallbackMap() map[string]ServiceCallback {
+func (cs *CoreService) buildCallbackMap() map[string]ServiceCallback {
 	cb := cs.desc.Callbacks
 	t := reflect.TypeOf(cb)
 
@@ -336,37 +336,37 @@ func (cs *coreService) buildCallbackMap() map[string]ServiceCallback {
 }
 
 // LC.Logger Interface Compatibility
-func (cs coreService) Fatal(msg string) {
+func (cs CoreService) Fatal(msg string) {
 	if cs.desc.LogCritical == nil {
 		return
 	}
 	cs.desc.LogCritical(msg)
 }
-func (cs coreService) Error(msg string) {
+func (cs CoreService) Error(msg string) {
 	if cs.desc.LogCritical == nil {
 		return
 	}
 	cs.desc.LogCritical(msg)
 }
-func (cs coreService) Warn(msg string) {
+func (cs CoreService) Warn(msg string) {
 	if cs.desc.LogCritical == nil {
 		return
 	}
 	cs.desc.LogCritical(msg)
 }
-func (cs coreService) Info(msg string) {
+func (cs CoreService) Info(msg string) {
 	if cs.desc.Log == nil {
 		return
 	}
 	cs.desc.Log(msg)
 }
-func (cs coreService) Debug(msg string) {
+func (cs CoreService) Debug(msg string) {
 	if cs.desc.Log == nil {
 		return
 	}
 	cs.desc.Log(msg)
 }
-func (cs coreService) Trace(msg string) {
+func (cs CoreService) Trace(msg string) {
 	if cs.desc.Log == nil {
 		return
 	}
