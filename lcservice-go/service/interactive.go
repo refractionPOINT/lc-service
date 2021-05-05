@@ -16,7 +16,7 @@ import (
 
 const (
 	interactiveRuleTemplate = `
-__%s:
+%s:
   detect:
     op: and
     rules:
