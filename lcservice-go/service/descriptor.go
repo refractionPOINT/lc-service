@@ -40,6 +40,18 @@ func (r Request) GetCommandID() (string, error) {
 	return cid, nil
 }
 
+func (r Request) GetSessionID() (string, error) {
+	eventSSID, found := r.Event.Data["ssid"]
+	if !found {
+		return "", fmt.Errorf("missing ssid (sessionID)")
+	}
+	ssid, ok := eventSSID.(string)
+	if !ok {
+		return "", fmt.Errorf("ssid is not a string")
+	}
+	return ssid, nil
+}
+
 type RequestEvent struct {
 	Type string
 	ID   string
