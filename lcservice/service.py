@@ -700,7 +700,6 @@ class InteractiveService( Service ):
         self._rootInvestigationId = "svc-%s-ex" % ( self._serviceName, )
         self._interactiveRule = yaml.safe_load( f'''
             {self._rootInvestigationId}:
-              namespace: replicant
               detect:
                 op: and
                 rules:
