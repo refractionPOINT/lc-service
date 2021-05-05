@@ -700,6 +700,7 @@ class InteractiveService( Service ):
         self._rootInvestigationId = "svc-%s-ex" % ( self._serviceName, )
         self._interactiveRule = yaml.safe_load( f'''
             {self._rootInvestigationId}:
+              namespace: managed
               detect:
                 op: and
                 rules:
