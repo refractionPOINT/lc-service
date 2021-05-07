@@ -11,7 +11,7 @@ def ServeCloudFunction( service, request ):
 
     # Verify the signature.
     sig = request.headers.get( 'lc-svc-sig', '' )
-    if not service._verifyOrigin( requestData, sig ):
+    if not service._verifyOrigin( request.get_data(), sig ):
         return flask.Response( 'bad origin signature', status = 401 )
 
     # Actually execute the service on the data.

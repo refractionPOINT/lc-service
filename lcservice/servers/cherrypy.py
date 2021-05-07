@@ -1,5 +1,6 @@
 import cherrypy
 import functools
+import json
 
 def ServeCherryPy( service, interface = '0.0.0.0', port = 80, options = {} ):
     '''Serve a service using the cherrypy web server.'''
@@ -26,15 +27,16 @@ def ServeCherryPy( service, interface = '0.0.0.0', port = 80, options = {} ):
 def _serviceApi(func):
     @functools.wraps(func)
     @cherrypy.tools.json_out()
-    @cherrypy.tools.json_in()
     def wrapper( self, *args, **kwargs):
         request = cherrypy.request
         # If no JSON is present, initialize it so
         # our code can be normalized.
         if not hasattr( request, 'json' ):
             setattr( request, 'json', {} )
-        if not self._service._verifyOrigin( request.json, request.headers.get( 'lc-svc-sig', '' ) ):
+        originalBody = request.body.read()
+        if not self._service._verifyOrigin( originalBody, request.headers.get( 'lc-svc-sig', '' ) ):
             raise cherrypy.HTTPError( 401, 'unauthorized: bad origin signature' )
+        cherrypy.request.json = json.loads( originalBody )
         return func( self, *args, **kwargs)
 
     return wrapper
