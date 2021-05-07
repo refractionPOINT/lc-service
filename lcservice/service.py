@@ -93,7 +93,6 @@ class Service( object ):
         self._onStartup()
 
     def _verifyOrigin( self, data, signature ):
-        data = json.dumps( data, sort_keys = True )
         if self._originSecret is None:
             return True
         if isinstance( data, str ):
