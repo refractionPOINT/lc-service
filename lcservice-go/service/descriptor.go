@@ -66,6 +66,32 @@ type Response struct {
 	Jobs        []*Job `json:"jobs,omitempty"`
 }
 
+func MakeErrorResponse(err error) Response {
+	return Response{
+		IsSuccess: false,
+		Error:     err.Error(),
+	}
+}
+
+func MakeRetriableErrorResponse(err error) Response {
+	return Response{
+		IsSuccess:   false,
+		Error:       err.Error(),
+		IsRetriable: true,
+	}
+}
+
+func MakeSuccessResponse(data ...Dict) Response {
+	var d Dict
+	if len(data) > 0 {
+		d = data[0]
+	}
+	return Response{
+		IsSuccess: true,
+		Data:      d,
+	}
+}
+
 type ServiceCallback = func(Request) Response
 
 // LimaCharlie Service Request formats.
