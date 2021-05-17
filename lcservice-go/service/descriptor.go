@@ -73,6 +73,10 @@ func MakeErrorResponse(err error) Response {
 	}
 }
 
+func MakeErrorResponseFromString(errStr string) Response {
+	return MakeErrorResponse(fmt.Errorf(errStr))
+}
+
 func MakeRetriableErrorResponse(err error) Response {
 	return Response{
 		IsSuccess:   false,
