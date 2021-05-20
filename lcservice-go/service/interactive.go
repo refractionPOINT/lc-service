@@ -249,7 +249,7 @@ func (is *InteractiveService) applyInteractiveRule(org *lc.Organization) error {
 }
 
 func (is *InteractiveService) removeInteractiveRule(org *lc.Organization) error {
-	if err := org.DRDelRule(is.detectionName); err != nil {
+	if err := org.DRRuleDelete(is.detectionName); err != nil {
 		is.cs.desc.LogCritical(fmt.Sprintf("error removing interactive rule: %v", err))
 		return err
 	}
