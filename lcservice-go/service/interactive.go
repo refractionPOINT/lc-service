@@ -16,7 +16,8 @@ import (
 
 const (
 	interactiveRuleTemplate = `
-__%s:
+%s:
+  namespace: managed
   detect:
     op: and
     rules:

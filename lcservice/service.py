@@ -93,7 +93,6 @@ class Service( object ):
         self._onStartup()
 
     def _verifyOrigin( self, data, signature ):
-        data = json.dumps( data, sort_keys = True )
         if self._originSecret is None:
             return True
         if isinstance( data, str ):
@@ -700,7 +699,7 @@ class InteractiveService( Service ):
         self._rootInvestigationId = "svc-%s-ex" % ( self._serviceName, )
         self._interactiveRule = yaml.safe_load( f'''
             {self._rootInvestigationId}:
-              namespace: replicant
+              namespace: managed
               detect:
                 op: and
                 rules:
