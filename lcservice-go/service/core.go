@@ -26,13 +26,13 @@ type CoreService struct {
 }
 
 type lcRequest struct {
-	Version  int     `json:"version"`
-	JWT      string  `json:"jwt"`
-	OID      string  `json:"oid"`
-	MsgID    string  `json:"mid"`
-	Deadline float64 `json:"deadline"`
-	Type     string  `json:"etype"`
-	Data     Dict    `json:"data"`
+	Version  int     `json:"version" msgpack:"version"`
+	JWT      string  `json:"jwt" msgpack:"jwt"`
+	OID      string  `json:"oid" msgpack:"oid"`
+	MsgID    string  `json:"mid" msgpack:"mid"`
+	Deadline float64 `json:"deadline" msgpack:"deadline"`
+	Type     string  `json:"etype" msgpack:"etype"`
+	Data     Dict    `json:"data" msgpack:"data"`
 }
 
 func NewService(descriptor Descriptor) (*CoreService, error) {
