@@ -16,12 +16,12 @@ type ResourceRequest struct {
 }
 
 type singleResourceRequest struct {
-	Name       string `json:"resource"`
-	IsWithData bool   `json:"is_include_data"`
+	Name       string `json:"resource" msgpack:"resource"`
+	IsWithData bool   `json:"is_include_data" msgpack:"is_include_data"`
 }
 type multiResourceRequest struct {
-	Names      []string `json:"resource"`
-	IsWithData bool     `json:"is_include_data"`
+	Names      []string `json:"resource" msgpack:"resource"`
+	IsWithData bool     `json:"is_include_data" msgpack:"is_include_data"`
 }
 
 type ResourceResponse struct {
