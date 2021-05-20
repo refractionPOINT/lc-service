@@ -63,17 +63,17 @@ type InteractiveCallback = func(InteractiveRequest) Response
 // Canonical format for context passing
 // between Services and LimaCharlie.
 type interactiveContext struct {
-	CallbackID string `json:"cb"`
-	JobID      string `json:"j,omitempty"`
-	SessionID  string `json:"s,omitempty"`
-	Context    Dict   `json:"c"`
+	CallbackID string `json:"cb" msgpack:"cb"`
+	JobID      string `json:"j,omitempty" msgpack:"j,omitempty"`
+	SessionID  string `json:"s,omitempty" msgpack:"s,omitempty"`
+	Context    Dict   `json:"c" msgpack:"c"`
 }
 
 type inboundDetection struct {
-	Detect  Dict `json:"detect"`
+	Detect  Dict `json:"detect" msgpack:"detect"`
 	Routing struct {
-		InvestigationID string `json:"investigation_id"`
-	} `json:"routing"`
+		InvestigationID string `json:"investigation_id" msgpack:"investigation_id"`
+	} `json:"routing" msgpack:"routing"`
 }
 
 type TrackedTaskingOptions struct {

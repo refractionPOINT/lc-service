@@ -59,11 +59,11 @@ type RequestEvent struct {
 }
 
 type Response struct {
-	IsSuccess   bool   `json:"success"`
-	IsRetriable bool   `json:"retry,omitempty"`
-	Error       string `json:"error,omitempty"`
-	Data        Dict   `json:"data"`
-	Jobs        []*Job `json:"jobs,omitempty"`
+	IsSuccess   bool   `json:"success" msgpack:"success"`
+	IsRetriable bool   `json:"retry,omitempty" msgpack:"retry,omitempty"`
+	Error       string `json:"error,omitempty" msgpack:"error,omitempty"`
+	Data        Dict   `json:"data" msgpack:"data"`
+	Jobs        []*Job `json:"jobs,omitempty" msgpack:"jobs,omitempty"`
 }
 
 type ServiceCallback = func(Request) Response
@@ -77,12 +77,12 @@ type ServiceCallback = func(Request) Response
 type RequestParamName = string
 type RequestParamType = string
 type RequestParamDef struct {
-	Type        RequestParamType `json:"type"`
-	Description string           `json:"desc"`
-	IsRequired  bool             `json:"is_required"`
+	Type        RequestParamType `json:"type" msgpack:"type"`
+	Description string           `json:"desc" msgpack:"desc"`
+	IsRequired  bool             `json:"is_required" msgpack:"is_required"`
 
 	// Only for "enum" Type
-	Values []string `json:"values,omitempty"`
+	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
 }
 type RequestParams = map[RequestParamName]RequestParamDef
 
@@ -161,42 +161,42 @@ type Descriptor struct {
 
 // Optional callbacks available.
 type DescriptorCallbacks struct {
-	OnOrgInstall   ServiceCallback `json:"org_install"`
-	OnOrgUninstall ServiceCallback `json:"org_uninstall"`
+	OnOrgInstall   ServiceCallback `json:"org_install" msgpack:"org_install"`
+	OnOrgUninstall ServiceCallback `json:"org_uninstall" msgpack:"org_uninstall"`
 
-	OnDetection       ServiceCallback `json:"detection"`
-	OnRequest         ServiceCallback `json:"request"`
-	OnGetResource     ServiceCallback `json:"get_resource"`
-	OnDeploymentEvent ServiceCallback `json:"deployment_event"`
-	OnLogEvent        ServiceCallback `json:"log_event"`
+	OnDetection       ServiceCallback `json:"detection" msgpack:"detection"`
+	OnRequest         ServiceCallback `json:"request" msgpack:"request"`
+	OnGetResource     ServiceCallback `json:"get_resource" msgpack:"get_resource"`
+	OnDeploymentEvent ServiceCallback `json:"deployment_event" msgpack:"deployment_event"`
+	OnLogEvent        ServiceCallback `json:"log_event" msgpack:"log_event"`
 
 	// Called once per Org per X time.
-	OnOrgPer1H  ServiceCallback `json:"org_per_1h"`
-	OnOrgPer3H  ServiceCallback `json:"org_per_3h"`
-	OnOrgPer12H ServiceCallback `json:"org_per_12h"`
-	OnOrgPer24H ServiceCallback `json:"org_per_24h"`
-	OnOrgPer7D  ServiceCallback `json:"org_per_7d"`
-	OnOrgPer30D ServiceCallback `json:"org_per_30d"`
+	OnOrgPer1H  ServiceCallback `json:"org_per_1h" msgpack:"org_per_1h"`
+	OnOrgPer3H  ServiceCallback `json:"org_per_3h" msgpack:"org_per_3h"`
+	OnOrgPer12H ServiceCallback `json:"org_per_12h" msgpack:"org_per_12h"`
+	OnOrgPer24H ServiceCallback `json:"org_per_24h" msgpack:"org_per_24h"`
+	OnOrgPer7D  ServiceCallback `json:"org_per_7d" msgpack:"org_per_7d"`
+	OnOrgPer30D ServiceCallback `json:"org_per_30d" msgpack:"org_per_30d"`
 
 	// Called once per X time.
-	OnOncePer1H  ServiceCallback `json:"once_per_1h"`
-	OnOncePer3H  ServiceCallback `json:"once_per_3h"`
-	OnOncePer12H ServiceCallback `json:"once_per_12h"`
-	OnOncePer24H ServiceCallback `json:"once_per_24h"`
-	OnOncePer7D  ServiceCallback `json:"once_per_7d"`
-	OnOncePer30D ServiceCallback `json:"once_per_30d"`
+	OnOncePer1H  ServiceCallback `json:"once_per_1h" msgpack:"once_per_1h"`
+	OnOncePer3H  ServiceCallback `json:"once_per_3h" msgpack:"once_per_3h"`
+	OnOncePer12H ServiceCallback `json:"once_per_12h" msgpack:"once_per_12h"`
+	OnOncePer24H ServiceCallback `json:"once_per_24h" msgpack:"once_per_24h"`
+	OnOncePer7D  ServiceCallback `json:"once_per_7d" msgpack:"once_per_7d"`
+	OnOncePer30D ServiceCallback `json:"once_per_30d" msgpack:"once_per_30d"`
 
 	// Called once per sensor per X time.
-	OnSensorPer1H  ServiceCallback `json:"sensor_per_1h"`
-	OnSensorPer3H  ServiceCallback `json:"sensor_per_3h"`
-	OnSensorPer12H ServiceCallback `json:"sensor_per_12h"`
-	OnSensorPer24H ServiceCallback `json:"sensor_per_24h"`
-	OnSensorPer7D  ServiceCallback `json:"sensor_per_7d"`
-	OnSensorPer30D ServiceCallback `json:"sensor_per_30d"`
+	OnSensorPer1H  ServiceCallback `json:"sensor_per_1h" msgpack:"sensor_per_1h"`
+	OnSensorPer3H  ServiceCallback `json:"sensor_per_3h" msgpack:"sensor_per_3h"`
+	OnSensorPer12H ServiceCallback `json:"sensor_per_12h" msgpack:"sensor_per_12h"`
+	OnSensorPer24H ServiceCallback `json:"sensor_per_24h" msgpack:"sensor_per_24h"`
+	OnSensorPer7D  ServiceCallback `json:"sensor_per_7d" msgpack:"sensor_per_7d"`
+	OnSensorPer30D ServiceCallback `json:"sensor_per_30d" msgpack:"sensor_per_30d"`
 
-	OnNewSensor ServiceCallback `json:"new_sensor"`
+	OnNewSensor ServiceCallback `json:"new_sensor" msgpack:"new_sensor"`
 
-	OnServiceError ServiceCallback `json:"service_error"`
+	OnServiceError ServiceCallback `json:"service_error" msgpack:"service_error"`
 }
 
 func (d Descriptor) IsValid() error {
