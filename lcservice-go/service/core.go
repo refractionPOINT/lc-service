@@ -10,7 +10,9 @@ import (
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
+	"github.com/refractionPOINT/lc-service/lcservice-go/common"
 	"github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/command"
+	"github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/request"
 )
 
 const (
@@ -169,7 +171,8 @@ func (cs *CoreService) ProcessCommand(data Dict) Response {
 }
 
 func (cs *CoreService) ProcessRequest(data Dict) Response {
-	return cs.processGenericRequest(data, &requestHandlerResolver{cs: cs})
+	resolver := request.NewService(cs)
+	return cs.processGenericRequest(data, &resolver)
 }
 
 func lcCompatibleJSONMarshal(d []byte) []byte {
@@ -184,7 +187,7 @@ func lcCompatibleJSONMarshal(d []byte) []byte {
 	return res
 }
 
-func (cs *CoreService) getHandler(reqType string) (ServiceCallback, bool) {
+func (cs *CoreService) GetHandler(reqType string) (common.ServiceCallback, bool) {
 	cb, ok := cs.cbMap[reqType]
 	return cb, ok
 }
