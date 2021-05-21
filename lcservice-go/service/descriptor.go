@@ -3,68 +3,13 @@ package service
 import (
 	"errors"
 	"fmt"
-	"time"
 
-	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
+	"github.com/refractionPOINT/lc-service/lcservice-go/common"
 )
 
-// Input/Output from Service callbacks.
-type Request struct {
-	Org      *lc.Organization
-	OID      string
-	Deadline time.Time
-	Event    RequestEvent
-}
-
-func (r Request) GetRoomID() (string, error) {
-	eventRID, found := r.Event.Data["rid"]
-	if !found {
-		return "", fmt.Errorf("missing rid (roomID)")
-	}
-	rid, ok := eventRID.(string)
-	if !ok {
-		return "", fmt.Errorf("rid is not a string")
-	}
-	return rid, nil
-}
-
-func (r Request) GetCommandID() (string, error) {
-	eventCID, found := r.Event.Data["cid"]
-	if !found {
-		return "", fmt.Errorf("missing cid (commandID)")
-	}
-	cid, ok := eventCID.(string)
-	if !ok {
-		return "", fmt.Errorf("cid is not a string")
-	}
-	return cid, nil
-}
-
-func (r Request) GetSessionID() (string, error) {
-	eventSSID, found := r.Event.Data["ssid"]
-	if !found {
-		return "", fmt.Errorf("missing ssid (sessionID)")
-	}
-	ssid, ok := eventSSID.(string)
-	if !ok {
-		return "", fmt.Errorf("ssid is not a string")
-	}
-	return ssid, nil
-}
-
-type RequestEvent struct {
-	Type string
-	ID   string
-	Data Dict
-}
-
-type Response struct {
-	IsSuccess   bool   `json:"success" msgpack:"success"`
-	IsRetriable bool   `json:"retry,omitempty" msgpack:"retry,omitempty"`
-	Error       string `json:"error,omitempty" msgpack:"error,omitempty"`
-	Data        Dict   `json:"data" msgpack:"data"`
-	Jobs        []*Job `json:"jobs,omitempty" msgpack:"jobs,omitempty"`
-}
+type Request = common.Request
+type RequestEvent = common.RequestEvent
+type Response = common.Response
 
 func MakeErrorResponse(err error) Response {
 	return Response{
@@ -96,75 +41,26 @@ func MakeSuccessResponse(data ...Dict) Response {
 	}
 }
 
-type ServiceCallback = func(Request) Response
-
-// LimaCharlie Service Request formats.
-// These parameter definitions are only used
-// to provide the LimaCharlie cloud with an
-// expected list of parameters. Actual validation
-// should be done at runtime. You may use the
-// helper function `DictToStruct` for this purpose.
-type RequestParamName = string
-type RequestParamType = string
-type RequestParamDef struct {
-	Type        RequestParamType `json:"type" msgpack:"type"`
-	Description string           `json:"desc" msgpack:"desc"`
-	IsRequired  bool             `json:"is_required" msgpack:"is_required"`
-
-	// Only for "enum" Type
-	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
-}
-type RequestParams = map[RequestParamName]RequestParamDef
-
-func (r *RequestParamDef) isValid() error {
-	if r.Description == "" {
-		return fmt.Errorf("parameter description is empty")
-	}
-	if _, ok := SupportedRequestParamTypes[r.Type]; !ok {
-		return fmt.Errorf("parameter type '%v' is not supported (%v)", r.Type, SupportedRequestParamTypes)
-	}
-	if r.Type == RequestParamTypes.Enum && len(r.Values) == 0 {
-		return fmt.Errorf("parameter type is enum but no values provided")
-	}
-	if r.Type != RequestParamTypes.Enum && len(r.Values) != 0 {
-		return fmt.Errorf("paramter type is not enum but has values provided")
-	}
-	return nil
-}
+type ServiceCallback = common.ServiceCallback
+type RequestParamName = common.RequestParamName
+type RequestParamType = common.RequestParamType
+type RequestParamDef = common.RequestParamDef
+type RequestParams = common.RequestParams
 
 func requestParamsIsValid(params RequestParams) error {
 	for paramName, paramDef := range params {
 		if paramName == "" {
 			return fmt.Errorf("parameter name is empty")
 		}
-		if err := paramDef.isValid(); err != nil {
+		if err := paramDef.IsValid(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-var RequestParamTypes = struct {
-	String RequestParamType
-	Enum   RequestParamType
-	Int    RequestParamType
-	Bool   RequestParamType
-	UUID   RequestParamType
-}{
-	String: "str",
-	Enum:   "enum",
-	Int:    "int",
-	Bool:   "bool",
-	UUID:   "uuid",
-}
-
-var SupportedRequestParamTypes = map[string]struct{}{
-	RequestParamTypes.String: {},
-	RequestParamTypes.Enum:   {},
-	RequestParamTypes.Int:    {},
-	RequestParamTypes.Bool:   {},
-	RequestParamTypes.UUID:   {},
-}
+var RequestParamTypes = common.RequestParamTypes
+var SupportedRequestParamTypes = common.SupportedRequestParamTypes
 
 type Descriptor struct {
 	// Basic info

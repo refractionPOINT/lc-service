@@ -1,4 +1,4 @@
-package service
+package common
 
 type CommandsDescriptor struct {
 	Descriptors []CommandDescriptor `json:"commands" msgpack:"commands"`

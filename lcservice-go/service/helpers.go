@@ -1,18 +1,13 @@
 package service
 
-import "encoding/json"
+import (
+	"github.com/refractionPOINT/lc-service/lcservice-go/common"
+)
 
-type Dict = map[string]interface{}
+type Dict = common.Dict
 
 func DictToStruct(d Dict, s interface{}) error {
-	b, err := json.Marshal(d)
-	if err != nil {
-		return err
-	}
-	if err := json.Unmarshal(b, s); err != nil {
-		return err
-	}
-	return nil
+	return common.DictToStruct(d, s)
 }
 
 func NewErrorResponse(err error) Response {
