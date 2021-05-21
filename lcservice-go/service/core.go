@@ -166,12 +166,12 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 }
 
 func (cs *CoreService) ProcessCommand(data Dict) Response {
-	resolver := command.NewService(cs.desc, cs)
+	resolver := command.NewResolver(cs.desc, cs)
 	return cs.processGenericRequest(data, &resolver)
 }
 
 func (cs *CoreService) ProcessRequest(data Dict) Response {
-	resolver := request.NewService(cs)
+	resolver := request.NewResolver(cs)
 	return cs.processGenericRequest(data, &resolver)
 }
 

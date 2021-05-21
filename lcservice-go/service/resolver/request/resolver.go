@@ -10,7 +10,7 @@ type requestHandlerResolver struct {
 	handlerGetter HandlerGetter
 }
 
-func NewService(handlerGetter HandlerGetter) requestHandlerResolver {
+func NewResolver(handlerGetter HandlerGetter) requestHandlerResolver {
 	return requestHandlerResolver{
 		handlerGetter: handlerGetter,
 	}

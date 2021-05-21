@@ -20,7 +20,7 @@ type commandHandlerResolver struct {
 	logger                Logger
 }
 
-func NewService(cmdsDescriptorsGetter CommandsDescriptorsGetter, logger Logger) commandHandlerResolver {
+func NewResolver(cmdsDescriptorsGetter CommandsDescriptorsGetter, logger Logger) commandHandlerResolver {
 	return commandHandlerResolver{
 		cmdsDescriptorsGetter: cmdsDescriptorsGetter,
 		logger:                logger,
