@@ -85,6 +85,10 @@ type Descriptor struct {
 	Commands CommandsDescriptor
 }
 
+func (d Descriptor) GetCommandsDescriptor() CommandsDescriptor {
+	return d.Commands
+}
+
 // Optional callbacks available.
 type DescriptorCallbacks struct {
 	OnOrgInstall   ServiceCallback `json:"org_install" msgpack:"org_install"`

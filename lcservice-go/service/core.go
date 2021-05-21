@@ -10,6 +10,7 @@ import (
 	"time"
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
+	"github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/command"
 )
 
 const (
@@ -65,10 +66,10 @@ func (cs *CoreService) GetSecretKey() []byte {
 }
 
 type handlerResolver interface {
-	getType() string
-	parse(requestEvent RequestEvent) (Dict, error)
-	get(requestEvent RequestEvent) ServiceCallback
-	preHandlerHook(request Request) error
+	GetType() string
+	Parse(requestEvent RequestEvent) (Dict, error)
+	Get(requestEvent RequestEvent) ServiceCallback
+	PreHandlerHook(request Request) error
 }
 
 func (cs *CoreService) Log(log string) {
@@ -88,7 +89,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
-	cs.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
+	cs.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.GetType(), data))
 
 	// Parse the request format.
 	req := lcRequest{}
@@ -125,14 +126,14 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		},
 	}
 	var err error
-	parsedData, err := resolver.parse(serviceRequest.Event)
+	parsedData, err := resolver.Parse(serviceRequest.Event)
 	if err != nil {
 		cs.LogError(err.Error())
 		return NewErrorResponse(err)
 	}
 	serviceRequest.Event.Data = parsedData
 
-	handler := resolver.get(serviceRequest.Event)
+	handler := resolver.Get(serviceRequest.Event)
 	if handler == nil {
 		cs.LogError(fmt.Sprintf("resolver not implemented for '%s'", serviceRequest.Event))
 		return NewErrorResponse(fmt.Errorf("not implemented"))
@@ -150,7 +151,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		}
 	}
 
-	if err := resolver.preHandlerHook(serviceRequest); err != nil {
+	if err := resolver.PreHandlerHook(serviceRequest); err != nil {
 		return NewErrorResponse(err)
 	}
 
@@ -163,7 +164,8 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 }
 
 func (cs *CoreService) ProcessCommand(data Dict) Response {
-	return cs.processGenericRequest(data, &commandHandlerResolver{commandsDesc: &cs.desc.Commands, desc: &cs.desc})
+	resolver := command.NewService(cs.desc, cs)
+	return cs.processGenericRequest(data, &resolver)
 }
 
 func (cs *CoreService) ProcessRequest(data Dict) Response {
