@@ -60,17 +60,24 @@ func (c *commandHandlerResolver) parse(requestEvent RequestEvent) (Dict, error) 
 func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback {
 	commandName, found := requestEvent.Data["command_name"]
 	if !found {
-		c.desc.Log("command_name not found in data")
+		if c.desc.IsDebug {
+			c.desc.Log("command_name not found in data")
+		}
 		return nil
 	}
-	c.desc.Log(fmt.Sprintf("looking for handler for '%s'", commandName))
+	if c.desc.IsDebug {
+		c.desc.Log(fmt.Sprintf("looking for handler for '%s'", commandName))
+	}
 
 	for _, commandHandler := range c.commandsDesc.Descriptors {
 		if commandName == commandHandler.Name {
 			return commandHandler.Handler
 		}
 	}
-	c.desc.Log(fmt.Sprintf("no handler found for '%s'", commandName))
+
+	if c.desc.IsDebug {
+		c.desc.Log(fmt.Sprintf("no handler found for '%s'", commandName))
+	}
 	return nil
 }
 

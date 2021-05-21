@@ -1,16 +1,8 @@
 package service
 
-type CommandsDescriptor struct {
-	Descriptors []CommandDescriptor `json:"commands" msgpack:"commands"`
-}
+import "github.com/refractionPOINT/lc-service/lcservice-go/common"
 
-type CommandName = string
-type CommandParams = RequestParams
-type CommandDescriptor struct {
-	Name        CommandName   `json:"name" msgpack:"name"`
-	Description string        `json:"desc" msgpack:"desc"`
-	Args        CommandParams `json:"args" msgpack:"args"`
-
-	ParseArguments bool            `json:"parse_args" msgpack:"parse_args"`
-	Handler        ServiceCallback `json:"-" msgpack:"-"`
-}
+type CommandsDescriptor = common.CommandsDescriptor
+type CommandName = common.CommandName
+type CommandParams = common.CommandParams
+type CommandDescriptor = common.CommandDescriptor
