@@ -1,6 +1,9 @@
 package request
 
-import "github.com/refractionPOINT/lc-service/lcservice-go/common"
+import (
+	"github.com/refractionPOINT/lc-service/lcservice-go/common"
+	"github.com/refractionPOINT/lc-service/lcservice-go/service/acker"
+)
 
 type HandlerGetter interface {
 	GetHandler(eventType string) (common.ServiceCallback, bool)
@@ -39,6 +42,6 @@ func (r *requestHandlerResolver) Get(requestEvent common.RequestEvent) common.Se
 	return handler
 }
 
-func (r *requestHandlerResolver) PreHandlerHook(request common.Request) error {
+func (r *requestHandlerResolver) PreHandlerHook(request common.Request, acker acker.RequestAcker) error {
 	return nil
 }

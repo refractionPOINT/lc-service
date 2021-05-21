@@ -13,6 +13,18 @@ type RequestEvent struct {
 	Data Dict
 }
 
+func (r RequestEvent) GetCommandName() (string, error) {
+	dataCmdName, found := r.Data["command_name"]
+	if !found {
+		return "", fmt.Errorf("command_name is missing")
+	}
+
+	cmdName, ok := dataCmdName.(string)
+	if !ok {
+		return "", fmt.Errorf("command_name is not a string")
+	}
+	return cmdName, nil
+}
 
 func (re RequestEvent) AsResourceRequest() (ResourceRequest, error) {
 	rr := ResourceRequest{}

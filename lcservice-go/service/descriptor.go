@@ -85,8 +85,8 @@ type Descriptor struct {
 	Commands CommandsDescriptor
 }
 
-func (d Descriptor) GetCommandsDescriptor() CommandsDescriptor {
-	return d.Commands
+func (d Descriptor) GetCommandDescriptors() []CommandDescriptor {
+	return d.Commands.Descriptors
 }
 
 // Optional callbacks available.

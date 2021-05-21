@@ -3,8 +3,8 @@ package command
 import (
 	"fmt"
 
-	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
 	"github.com/refractionPOINT/lc-service/lcservice-go/common"
+	"github.com/refractionPOINT/lc-service/lcservice-go/service/acker"
 )
 
 type Logger interface {
@@ -12,7 +12,11 @@ type Logger interface {
 }
 
 type CommandsDescriptorsGetter interface {
-	GetCommandsDescriptor() common.CommandsDescriptor
+	GetCommandDescriptors() []common.CommandDescriptor
+}
+
+type CommandAcker interface {
+	Ack(req common.Request) error
 }
 
 type commandHandlerResolver struct {
@@ -39,14 +43,14 @@ func (c *commandHandlerResolver) Parse(requestEvent common.RequestEvent) (common
 }
 
 func (c *commandHandlerResolver) Get(requestEvent common.RequestEvent) common.ServiceCallback {
-	commandName, found := requestEvent.Data["command_name"]
-	if !found {
-		c.logger.Log("command_name not found in data")
+	commandName, err := requestEvent.GetCommandName()
+	if err != nil {
+		c.logger.Log(fmt.Sprintf("command_name: %v", err))
 		return nil
 	}
 	c.logger.Log(fmt.Sprintf("looking for handler for '%s'", commandName))
 
-	for _, commandHandler := range c.cmdsDescriptorsGetter.GetCommandsDescriptor().Descriptors {
+	for _, commandHandler := range c.cmdsDescriptorsGetter.GetCommandDescriptors() {
 		if commandName == commandHandler.Name {
 			return commandHandler.Handler
 		}
@@ -55,28 +59,11 @@ func (c *commandHandlerResolver) Get(requestEvent common.RequestEvent) common.Se
 	return nil
 }
 
-func (r *commandHandlerResolver) PreHandlerHook(request common.Request) error {
-	rid, err := request.GetRoomID()
-	if err != nil {
-		return err
-	}
-	cid, err := request.GetCommandID()
-	if err != nil {
-		return err
-	}
-
+func (r *commandHandlerResolver) PreHandlerHook(request common.Request, reqAcker acker.RequestAcker) error {
 	// Test compat, ignore if no SDK.
 	if request.Org == nil {
 		return nil
 	}
 
-	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
-		Type: lc.CommsMessageTypes.CommandAck,
-		Content: common.Dict{
-			"cid": cid,
-		},
-	}); err != nil {
-		return err
-	}
-	return nil
+	return reqAcker.Ack(request)
 }

@@ -11,7 +11,9 @@ import (
 
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
 	"github.com/refractionPOINT/lc-service/lcservice-go/common"
-	"github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/command"
+	acker "github.com/refractionPOINT/lc-service/lcservice-go/service/acker"
+	cmdAcker "github.com/refractionPOINT/lc-service/lcservice-go/service/acker/command"
+	cmdResolver "github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/command"
 	"github.com/refractionPOINT/lc-service/lcservice-go/service/resolver/request"
 )
 
@@ -71,7 +73,7 @@ type handlerResolver interface {
 	GetType() string
 	Parse(requestEvent RequestEvent) (Dict, error)
 	Get(requestEvent RequestEvent) ServiceCallback
-	PreHandlerHook(request Request) error
+	PreHandlerHook(request Request, acker acker.RequestAcker) error
 }
 
 func (cs *CoreService) Log(log string) {
@@ -86,7 +88,7 @@ func (cs *CoreService) LogError(errStr string) {
 	}
 }
 
-func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver) Response {
+func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver, acker acker.RequestAcker) Response {
 	atomic.AddUint32(&cs.callsInProgress, 1)
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
@@ -153,7 +155,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		}
 	}
 
-	if err := resolver.PreHandlerHook(serviceRequest); err != nil {
+	if err := resolver.PreHandlerHook(serviceRequest, acker); err != nil {
 		return NewErrorResponse(err)
 	}
 
@@ -166,13 +168,14 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 }
 
 func (cs *CoreService) ProcessCommand(data Dict) Response {
-	resolver := command.NewResolver(cs.desc, cs)
-	return cs.processGenericRequest(data, &resolver)
+	resolver := cmdResolver.NewResolver(cs.desc, cs)
+	acker := cmdAcker.NewRequestAcker()
+	return cs.processGenericRequest(data, &resolver, &acker)
 }
 
 func (cs *CoreService) ProcessRequest(data Dict) Response {
 	resolver := request.NewResolver(cs)
-	return cs.processGenericRequest(data, &resolver)
+	return cs.processGenericRequest(data, &resolver, &acker.NoopAcker{})
 }
 
 func lcCompatibleJSONMarshal(d []byte) []byte {
