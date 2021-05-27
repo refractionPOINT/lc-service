@@ -222,6 +222,27 @@ type Descriptor struct {
 	Commands CommandsDescriptor
 }
 
+func (d Descriptor) GetEnumValue(key string, req Request) (string, error) {
+	paramDef, found := d.RequestParameters[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
+	}
+	if paramDef.Type != RequestParamTypes.Enum {
+		return "", fmt.Errorf("key '%s' is not of enum type", key)
+	}
+	enumValue, err := req.GetString(key)
+	if err != nil {
+		return "", err
+	}
+
+	for _, value := range paramDef.Values {
+		if value == enumValue {
+			return enumValue, nil
+		}
+	}
+	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
+}
+
 // Optional callbacks available.
 type DescriptorCallbacks struct {
 	OnOrgInstall   ServiceCallback `json:"org_install" msgpack:"org_install"`
