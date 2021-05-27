@@ -74,39 +74,15 @@ func (r Request) GetUUID(key string) (uuid.UUID, error) {
 }
 
 func (r Request) GetRoomID() (string, error) {
-	eventRID, found := r.Event.Data["rid"]
-	if !found {
-		return "", fmt.Errorf("missing rid (roomID)")
-	}
-	rid, ok := eventRID.(string)
-	if !ok {
-		return "", fmt.Errorf("rid is not a string")
-	}
-	return rid, nil
+	return r.GetString("rid")
 }
 
 func (r Request) GetCommandID() (string, error) {
-	eventCID, found := r.Event.Data["cid"]
-	if !found {
-		return "", fmt.Errorf("missing cid (commandID)")
-	}
-	cid, ok := eventCID.(string)
-	if !ok {
-		return "", fmt.Errorf("cid is not a string")
-	}
-	return cid, nil
+	return r.GetString("cid")
 }
 
 func (r Request) GetSessionID() (string, error) {
-	eventSSID, found := r.Event.Data["ssid"]
-	if !found {
-		return "", fmt.Errorf("missing ssid (sessionID)")
-	}
-	ssid, ok := eventSSID.(string)
-	if !ok {
-		return "", fmt.Errorf("ssid is not a string")
-	}
-	return ssid, nil
+	return r.GetString("ssid")
 }
 
 type RequestEvent struct {
