@@ -147,7 +147,7 @@ type RequestParamDef struct {
 	// Only for "enum" Type
 	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
 }
-type RequestParams = map[RequestParamName]RequestParamDef
+type RequestParams map[RequestParamName]RequestParamDef
 
 func (r *RequestParamDef) isValid() error {
 	if r.Description == "" {
@@ -163,6 +163,27 @@ func (r *RequestParamDef) isValid() error {
 		return fmt.Errorf("paramter type is not enum but has values provided")
 	}
 	return nil
+}
+
+func (params RequestParams) GetEnumValue(key string, req Request) (string, error) {
+	paramDef, found := params[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
+	}
+	if paramDef.Type != RequestParamTypes.Enum {
+		return "", fmt.Errorf("key '%s' is not of enum type", key)
+	}
+	enumValue, err := req.GetString(key)
+	if err != nil {
+		return "", err
+	}
+
+	for _, value := range paramDef.Values {
+		if value == enumValue {
+			return enumValue, nil
+		}
+	}
+	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
 }
 
 func requestParamsIsValid(params RequestParams) error {
@@ -220,27 +241,6 @@ type Descriptor struct {
 
 	// Commands
 	Commands CommandsDescriptor
-}
-
-func (d Descriptor) GetEnumValue(key string, req Request) (string, error) {
-	paramDef, found := d.RequestParameters[key]
-	if !found {
-		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
-	}
-	if paramDef.Type != RequestParamTypes.Enum {
-		return "", fmt.Errorf("key '%s' is not of enum type", key)
-	}
-	enumValue, err := req.GetString(key)
-	if err != nil {
-		return "", err
-	}
-
-	for _, value := range paramDef.Values {
-		if value == enumValue {
-			return enumValue, nil
-		}
-	}
-	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
 }
 
 // Optional callbacks available.
