@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
 )
 
@@ -14,6 +15,62 @@ type Request struct {
 	OID      string
 	Deadline time.Time
 	Event    RequestEvent
+}
+
+func (r Request) Get(key string) (interface{}, error) {
+	dataValue, found := r.Event.Data[key]
+	if !found {
+		return "", fmt.Errorf("key %s not found", key)
+	}
+	return dataValue, nil
+}
+
+func (r Request) GetString(key string) (string, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return "", err
+	}
+	value, ok := dataValue.(string)
+	if !ok {
+		return "", fmt.Errorf("key %s is not a string", key)
+	}
+	return value, nil
+}
+
+func (r Request) GetInt(key string) (int, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	value, ok := dataValue.(int)
+	if !ok {
+		return 0, fmt.Errorf("key %s is not an integer", key)
+	}
+	return value, nil
+}
+
+func (r Request) GetBool(key string) (bool, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return false, err
+	}
+	value, ok := dataValue.(bool)
+	if !ok {
+		return false, fmt.Errorf("key %s is not a boolean", key)
+	}
+	return value, nil
+}
+
+func (r Request) GetUUID(key string) (uuid.UUID, error) {
+	strValue, err := r.GetString(key)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	uuidValue, err := uuid.Parse(strValue)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("could not parse uuid from key %s", key)
+	}
+	return uuidValue, nil
 }
 
 func (r Request) GetRoomID() (string, error) {
