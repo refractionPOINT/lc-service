@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
 )
 
@@ -16,40 +17,93 @@ type Request struct {
 	Event    RequestEvent
 }
 
-func (r Request) GetRoomID() (string, error) {
-	eventRID, found := r.Event.Data["rid"]
+func (r Request) Get(key string) (interface{}, error) {
+	dataValue, found := r.Event.Data[key]
 	if !found {
-		return "", fmt.Errorf("missing rid (roomID)")
+		return "", fmt.Errorf("key %s not found", key)
 	}
-	rid, ok := eventRID.(string)
+	return dataValue, nil
+}
+
+func (r Request) GetString(key string) (string, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return "", err
+	}
+	value, ok := dataValue.(string)
 	if !ok {
-		return "", fmt.Errorf("rid is not a string")
+		return "", fmt.Errorf("key %s is not a string", key)
 	}
-	return rid, nil
+	return value, nil
+}
+
+func (r Request) GetEnumValue(key string, requestParams RequestParams) (string, error) {
+	paramDef, found := requestParams[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
+	}
+	if paramDef.Type != RequestParamTypes.Enum {
+		return "", fmt.Errorf("key '%s' is not of enum type", key)
+	}
+	enumValue, err := r.GetString(key)
+	if err != nil {
+		return "", err
+	}
+
+	for _, value := range paramDef.Values {
+		if value == enumValue {
+			return enumValue, nil
+		}
+	}
+	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
+}
+
+func (r Request) GetInt(key string) (int, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return 0, err
+	}
+	value, ok := dataValue.(int)
+	if !ok {
+		return 0, fmt.Errorf("key %s is not an integer", key)
+	}
+	return value, nil
+}
+
+func (r Request) GetBool(key string) (bool, error) {
+	dataValue, err := r.Get(key)
+	if err != nil {
+		return false, err
+	}
+	value, ok := dataValue.(bool)
+	if !ok {
+		return false, fmt.Errorf("key %s is not a boolean", key)
+	}
+	return value, nil
+}
+
+func (r Request) GetUUID(key string) (uuid.UUID, error) {
+	strValue, err := r.GetString(key)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	uuidValue, err := uuid.Parse(strValue)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("could not parse uuid from key %s", key)
+	}
+	return uuidValue, nil
+}
+
+func (r Request) GetRoomID() (string, error) {
+	return r.GetString("rid")
 }
 
 func (r Request) GetCommandID() (string, error) {
-	eventCID, found := r.Event.Data["cid"]
-	if !found {
-		return "", fmt.Errorf("missing cid (commandID)")
-	}
-	cid, ok := eventCID.(string)
-	if !ok {
-		return "", fmt.Errorf("cid is not a string")
-	}
-	return cid, nil
+	return r.GetString("cid")
 }
 
 func (r Request) GetSessionID() (string, error) {
-	eventSSID, found := r.Event.Data["ssid"]
-	if !found {
-		return "", fmt.Errorf("missing ssid (sessionID)")
-	}
-	ssid, ok := eventSSID.(string)
-	if !ok {
-		return "", fmt.Errorf("ssid is not a string")
-	}
-	return ssid, nil
+	return r.GetString("ssid")
 }
 
 type RequestEvent struct {
@@ -114,7 +168,7 @@ type RequestParamDef struct {
 	// Only for "enum" Type
 	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
 }
-type RequestParams = map[RequestParamName]RequestParamDef
+type RequestParams map[RequestParamName]RequestParamDef
 
 func (r *RequestParamDef) isValid() error {
 	if r.Description == "" {

@@ -15,6 +15,17 @@ func DictToStruct(d Dict, s interface{}) error {
 	return nil
 }
 
+func StructToDict(s interface{}, d *Dict) error {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(b, d); err != nil {
+		return err
+	}
+	return nil
+}
+
 func NewErrorResponse(err error) Response {
 	return Response{Error: err.Error()}
 }
