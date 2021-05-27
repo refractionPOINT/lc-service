@@ -37,6 +37,27 @@ func (r Request) GetString(key string) (string, error) {
 	return value, nil
 }
 
+func (r Request) GetEnumValue(key string, requestParams RequestParams) (string, error) {
+	paramDef, found := requestParams[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
+	}
+	if paramDef.Type != RequestParamTypes.Enum {
+		return "", fmt.Errorf("key '%s' is not of enum type", key)
+	}
+	enumValue, err := r.GetString(key)
+	if err != nil {
+		return "", err
+	}
+
+	for _, value := range paramDef.Values {
+		if value == enumValue {
+			return enumValue, nil
+		}
+	}
+	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
+}
+
 func (r Request) GetInt(key string) (int, error) {
 	dataValue, err := r.Get(key)
 	if err != nil {
@@ -163,27 +184,6 @@ func (r *RequestParamDef) isValid() error {
 		return fmt.Errorf("paramter type is not enum but has values provided")
 	}
 	return nil
-}
-
-func (params RequestParams) GetEnumValue(key string, req Request) (string, error) {
-	paramDef, found := params[key]
-	if !found {
-		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
-	}
-	if paramDef.Type != RequestParamTypes.Enum {
-		return "", fmt.Errorf("key '%s' is not of enum type", key)
-	}
-	enumValue, err := req.GetString(key)
-	if err != nil {
-		return "", err
-	}
-
-	for _, value := range paramDef.Values {
-		if value == enumValue {
-			return enumValue, nil
-		}
-	}
-	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
 }
 
 func requestParamsIsValid(params RequestParams) error {
