@@ -19,12 +19,6 @@ func encodeResponse(resp svc.Response, w http.ResponseWriter) {
 }
 
 func handleResponse(resp svc.Response, w http.ResponseWriter) {
-	if resp.Error != "" {
-		w.WriteHeader(http.StatusBadRequest)
-		encodeResponse(resp, w)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 	encodeResponse(resp, w)
 }
