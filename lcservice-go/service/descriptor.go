@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +21,7 @@ type Request struct {
 func (r Request) Get(key string) (interface{}, error) {
 	dataValue, found := r.Event.Data[key]
 	if !found {
-		return "", fmt.Errorf("key %s not found", key)
+		return "", fmt.Errorf("key '%s' not found", key)
 	}
 	return dataValue, nil
 }
@@ -32,7 +33,7 @@ func (r Request) GetString(key string) (string, error) {
 	}
 	value, ok := dataValue.(string)
 	if !ok {
-		return "", fmt.Errorf("key %s is not a string", key)
+		return "", fmt.Errorf("key '%s' is not a string", key)
 	}
 	return value, nil
 }
@@ -65,7 +66,7 @@ func (r Request) GetInt(key string) (int, error) {
 	}
 	value, ok := dataValue.(int)
 	if !ok {
-		return 0, fmt.Errorf("key %s is not an integer", key)
+		return 0, fmt.Errorf("key '%s' is not an integer", key)
 	}
 	return value, nil
 }
@@ -76,10 +77,16 @@ func (r Request) GetBool(key string) (bool, error) {
 		return false, err
 	}
 	value, ok := dataValue.(bool)
-	if !ok {
-		return false, fmt.Errorf("key %s is not a boolean", key)
+	if ok {
+		return value, nil
 	}
-	return value, nil
+	strValue, ok := dataValue.(string)
+	if ok {
+		if boolValue, err := strconv.ParseBool(strValue); err == nil {
+			return boolValue, nil
+		}
+	}
+	return false, fmt.Errorf("key '%s' is not a boolean", key)
 }
 
 func (r Request) GetUUID(key string) (uuid.UUID, error) {
@@ -89,7 +96,7 @@ func (r Request) GetUUID(key string) (uuid.UUID, error) {
 	}
 	uuidValue, err := uuid.Parse(strValue)
 	if err != nil {
-		return uuid.UUID{}, fmt.Errorf("could not parse uuid from key %s", key)
+		return uuid.UUID{}, fmt.Errorf("could not parse uuid from key '%s'", key)
 	}
 	return uuidValue, nil
 }
@@ -167,6 +174,9 @@ type RequestParamDef struct {
 
 	// Only for "enum" Type
 	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
+
+	// Optional index for parameter ordering
+	Index int `json:"index" msgpack:"index"`
 }
 type RequestParams map[RequestParamName]RequestParamDef
 

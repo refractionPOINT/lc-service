@@ -138,6 +138,7 @@ func TestProcess(t *testing.T) {
 					"desc":        "arg0 description",
 					"is_required": false,
 					"type":        "str",
+					"index":       float64(0),
 				},
 			},
 			"name": "testMe",
