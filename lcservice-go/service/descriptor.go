@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -76,10 +77,16 @@ func (r Request) GetBool(key string) (bool, error) {
 		return false, err
 	}
 	value, ok := dataValue.(bool)
-	if !ok {
-		return false, fmt.Errorf("key %s is not a boolean", key)
+	if ok {
+		return value, nil
 	}
-	return value, nil
+	strValue, ok := dataValue.(string)
+	if ok {
+		if boolValue, err := strconv.ParseBool(strValue); err == nil {
+			return boolValue, nil
+		}
+	}
+	return false, fmt.Errorf("key %s is not a boolean", key)
 }
 
 func (r Request) GetUUID(key string) (uuid.UUID, error) {
