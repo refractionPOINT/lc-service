@@ -167,6 +167,9 @@ type RequestParamDef struct {
 
 	// Only for "enum" Type
 	Values []string `json:"values,omitempty" msgpack:"values,omitempty"`
+
+	// Optional index for parameter ordering
+	Index int `json:"index" msgpack:"index"`
 }
 type RequestParams map[RequestParamName]RequestParamDef
 
