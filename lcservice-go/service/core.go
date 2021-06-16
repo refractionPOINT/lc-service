@@ -183,7 +183,6 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 	defer func() {
 		atomic.AddUint32(&cs.callsInProgress, ^uint32(0))
 	}()
-	cs.Log(fmt.Sprintf("Processing started for '%s' => %+v", resolver.getType(), data))
 
 	// Parse the request format.
 	req := lcRequest{}
