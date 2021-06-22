@@ -214,12 +214,14 @@ var RequestParamTypes = struct {
 	Int    RequestParamType
 	Bool   RequestParamType
 	UUID   RequestParamType
+	SID    RequestParamType
 }{
 	String: "str",
 	Enum:   "enum",
 	Int:    "int",
 	Bool:   "bool",
 	UUID:   "uuid",
+	SID:    "sid",
 }
 
 var SupportedRequestParamTypes = map[string]struct{}{
@@ -228,6 +230,7 @@ var SupportedRequestParamTypes = map[string]struct{}{
 	RequestParamTypes.Int:    {},
 	RequestParamTypes.Bool:   {},
 	RequestParamTypes.UUID:   {},
+	RequestParamTypes.SID:    {},
 }
 
 type Descriptor struct {
