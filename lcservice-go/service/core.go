@@ -155,28 +155,11 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 		return nil
 	}
 
-	serviceName, err := request.GetString("service")
-	if err != nil {
-		return err
-	}
-
-	commandName, err := request.GetString("command_name")
-	if err != nil {
-		return err
-	}
-
-	commandRequest, err := request.Get("request")
-	if err != nil {
-		return err
-	}
-
 	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
 		Type: lc.CommsMessageTypes.CommandAck,
 		Content: Dict{
-			"cid":           cid,
-			"commandName":   commandName,
-			"commandParams": commandRequest,
-			"serviceName":   serviceName,
+			"cid":     cid,
+			"command": request.Event.Data,
 		},
 	}); err != nil {
 		return err
