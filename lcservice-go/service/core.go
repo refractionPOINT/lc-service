@@ -145,10 +145,6 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 	if err != nil {
 		return err
 	}
-	cid, err := request.GetCommandID()
-	if err != nil {
-		return err
-	}
 
 	// Test compat, ignore if no SDK.
 	if request.Org == nil {
@@ -156,11 +152,8 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 	}
 
 	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
-		Type: lc.CommsMessageTypes.CommandAck,
-		Content: Dict{
-			"cid":     cid,
-			"command": request.Event.Data,
-		},
+		Type:    lc.CommsMessageTypes.CommandAck,
+		Content: request.Event.Data,
 	}); err != nil {
 		return err
 	}
