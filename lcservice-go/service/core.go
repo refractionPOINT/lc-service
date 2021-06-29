@@ -68,7 +68,7 @@ type handlerResolver interface {
 	getType() string
 	parse(requestEvent RequestEvent) (Dict, error)
 	get(requestEvent RequestEvent) ServiceCallback
-	preHandlerHook(request Request) error
+	preHandlerHook(request Request) (string, error)
 }
 
 type requestHandlerResolver struct {
@@ -98,8 +98,8 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return handler
 }
 
-func (r *requestHandlerResolver) preHandlerHook(request Request) error {
-	return nil
+func (r *requestHandlerResolver) preHandlerHook(request Request) (string, error) {
+	return "", nil
 }
 
 type commandHandlerResolver struct {
@@ -140,24 +140,25 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return nil
 }
 
-func (r *commandHandlerResolver) preHandlerHook(request Request) error {
+func (r *commandHandlerResolver) preHandlerHook(request Request) (string, error) {
 	rid, err := request.GetRoomID()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Test compat, ignore if no SDK.
 	if request.Org == nil {
-		return nil
+		return "", nil
 	}
 
-	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
+	mid, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
 		Type:    lc.CommsMessageTypes.CommandAck,
 		Content: request.Event.Data,
-	}); err != nil {
-		return err
+	})
+	if err != nil {
+		return "", err
 	}
-	return nil
+	return mid, nil
 }
 
 func (cs *CoreService) Log(log string) {
@@ -204,6 +205,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 	}
 
 	serviceRequest := Request{
+		Refs:     RequestRefs{},
 		OID:      req.OID,
 		Deadline: deadline,
 		Event: RequestEvent{
@@ -238,8 +240,12 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		}
 	}
 
-	if err := resolver.preHandlerHook(serviceRequest); err != nil {
+	ackMid, err := resolver.preHandlerHook(serviceRequest)
+	if err != nil {
 		return NewErrorResponse(err)
+	}
+	if ackMid != "" {
+		serviceRequest.Refs.AckMID = ackMid
 	}
 
 	// Send it.
