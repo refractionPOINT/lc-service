@@ -68,7 +68,7 @@ type handlerResolver interface {
 	getType() string
 	parse(requestEvent RequestEvent) (Dict, error)
 	get(requestEvent RequestEvent) ServiceCallback
-	preHandlerHook(request Request) error
+	preHandlerHook(request *Request) error
 	errorHandlerHook(request Request, errorMessage string) error
 }
 
@@ -99,7 +99,7 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return handler
 }
 
-func (r *requestHandlerResolver) preHandlerHook(request Request) error {
+func (r *requestHandlerResolver) preHandlerHook(request *Request) error {
 	return nil
 }
 
@@ -145,7 +145,7 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 	return nil
 }
 
-func (r *commandHandlerResolver) preHandlerHook(request Request) error {
+func (r *commandHandlerResolver) preHandlerHook(request *Request) error {
 	rid, err := request.GetRoomID()
 	if err != nil {
 		return err
@@ -156,12 +156,15 @@ func (r *commandHandlerResolver) preHandlerHook(request Request) error {
 		return nil
 	}
 
-	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
+	mid, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
 		Type:    lc.CommsMessageTypes.CommandAck,
 		Content: request.Event.Data,
-	}); err != nil {
+	})
+	if err != nil {
 		return err
 	}
+	request.Refs.AckMID = mid
+
 	return nil
 }
 
@@ -233,6 +236,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 	}
 
 	serviceRequest := Request{
+		Refs:     RequestRefs{},
 		OID:      req.OID,
 		Deadline: deadline,
 		Event: RequestEvent{
@@ -267,7 +271,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		}
 	}
 
-	if err := resolver.preHandlerHook(serviceRequest); err != nil {
+	if err := resolver.preHandlerHook(&serviceRequest); err != nil {
 		return NewErrorResponse(err)
 	}
 

@@ -12,6 +12,7 @@ import (
 
 // Input/Output from Service callbacks.
 type Request struct {
+	Refs     RequestRefs
 	Org      *lc.Organization
 	OID      string
 	Deadline time.Time
@@ -113,7 +114,16 @@ func (r Request) GetSessionID() (string, error) {
 	return r.GetString("ssid")
 }
 
+func (r Request) GetAckMessageID() string {
+	return r.Refs.AckMID
+}
+
+type RequestRefs struct {
+	AckMID string
+}
+
 type RequestEvent struct {
+	Refs RequestRefs
 	Type string
 	ID   string
 	Data Dict
