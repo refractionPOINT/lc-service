@@ -277,7 +277,7 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 		cs.desc.Log(fmt.Sprintf("REQ (%s) result: err(%s)", req.MsgID, resp.Error))
 	}
 
-	if resp.IsSuccess == false {
+	if !resp.IsSuccess {
 		if err := resolver.errorHandlerHook(serviceRequest, resp.Error); err != nil {
 			return NewErrorResponse(err)
 		}
