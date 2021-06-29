@@ -163,13 +163,13 @@ func (r *commandHandlerResolver) preHandlerHook(request *Request) error {
 	if err != nil {
 		return err
 	}
-	request.Refs.AckMID = mid
+	request.Refs.AckMessageID = mid
 
 	return nil
 }
 
 func (r *commandHandlerResolver) errorHandlerHook(request Request, errorMessage string) error {
-	amid := request.GetAckMID()
+	amid := request.GetAckMessageID()
 	if amid == "" {
 		return nil
 	}
