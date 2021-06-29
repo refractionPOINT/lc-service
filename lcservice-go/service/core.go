@@ -69,6 +69,7 @@ type handlerResolver interface {
 	parse(requestEvent RequestEvent) (Dict, error)
 	get(requestEvent RequestEvent) ServiceCallback
 	preHandlerHook(request *Request) error
+	errorHandlerHook(request Request, errorMessage string) error
 }
 
 type requestHandlerResolver struct {
@@ -99,6 +100,10 @@ func (r *requestHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 }
 
 func (r *requestHandlerResolver) preHandlerHook(request *Request) error {
+	return nil
+}
+
+func (r *requestHandlerResolver) errorHandlerHook(request Request, errorMessage string) error {
 	return nil
 }
 
@@ -158,7 +163,31 @@ func (r *commandHandlerResolver) preHandlerHook(request *Request) error {
 	if err != nil {
 		return err
 	}
-	request.Refs.AckMID = mid
+	request.Refs.AckMessageID = mid
+
+	return nil
+}
+
+func (r *commandHandlerResolver) errorHandlerHook(request Request, errorMessage string) error {
+	amid := request.GetAckMessageID()
+	if amid == "" {
+		return nil
+	}
+	rid, err := request.GetRoomID()
+	if err != nil {
+		return err
+	}
+
+	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
+		Parent: amid,
+		Type:   lc.CommsMessageTypes.Error,
+		Content: lc.MessageError{
+			Code:    "IDK",
+			Message: errorMessage,
+		},
+	}); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -251,6 +280,13 @@ func (cs *CoreService) processGenericRequest(data Dict, resolver handlerResolver
 	if cs.desc.IsDebug {
 		cs.desc.Log(fmt.Sprintf("REQ (%s) result: err(%s)", req.MsgID, resp.Error))
 	}
+
+	if !resp.IsSuccess {
+		if err := resolver.errorHandlerHook(serviceRequest, resp.Error); err != nil {
+			return NewErrorResponse(err)
+		}
+	}
+
 	return resp
 }
 

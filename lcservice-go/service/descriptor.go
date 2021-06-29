@@ -115,11 +115,11 @@ func (r Request) GetSessionID() (string, error) {
 }
 
 func (r Request) GetAckMessageID() string {
-	return r.Refs.AckMID
+	return r.Refs.AckMessageID
 }
 
 type RequestRefs struct {
-	AckMID string
+	AckMessageID string
 }
 
 type RequestEvent struct {
