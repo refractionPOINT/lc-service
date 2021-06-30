@@ -182,7 +182,6 @@ func (r *commandHandlerResolver) errorHandlerHook(request Request, errorMessage 
 		Parent: amid,
 		Type:   lc.CommsMessageTypes.Error,
 		Content: lc.MessageError{
-			Code:    "IDK",
 			Message: errorMessage,
 		},
 	}); err != nil {
