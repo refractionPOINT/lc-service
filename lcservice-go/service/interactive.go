@@ -68,7 +68,7 @@ func (r InteractiveRequest) GetFromContext(key string) (interface{}, error) {
 	return dataValue, nil
 }
 
-func (r InteractiveRequest) GetString(key string) (string, error) {
+func (r InteractiveRequest) GetStringFromContext(key string) (string, error) {
 	dataValue, err := r.GetFromContext(key)
 	if err != nil {
 		return "", err
@@ -80,7 +80,7 @@ func (r InteractiveRequest) GetString(key string) (string, error) {
 	return value, nil
 }
 
-func (r InteractiveRequest) GetEnumValue(key string, requestParams RequestParams) (string, error) {
+func (r InteractiveRequest) GetEnumValueFromContext(key string, requestParams RequestParams) (string, error) {
 	paramDef, found := requestParams[key]
 	if !found {
 		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
@@ -88,7 +88,7 @@ func (r InteractiveRequest) GetEnumValue(key string, requestParams RequestParams
 	if paramDef.Type != RequestParamTypes.Enum {
 		return "", fmt.Errorf("key '%s' is not of enum type", key)
 	}
-	enumValue, err := r.GetString(key)
+	enumValue, err := r.GetStringFromContext(key)
 	if err != nil {
 		return "", err
 	}
@@ -101,7 +101,7 @@ func (r InteractiveRequest) GetEnumValue(key string, requestParams RequestParams
 	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
 }
 
-func (r InteractiveRequest) GetInt(key string) (int, error) {
+func (r InteractiveRequest) GetIntFromContext(key string) (int, error) {
 	dataValue, err := r.GetFromContext(key)
 	if err != nil {
 		return 0, err
@@ -113,7 +113,7 @@ func (r InteractiveRequest) GetInt(key string) (int, error) {
 	return value, nil
 }
 
-func (r InteractiveRequest) GetBool(key string) (bool, error) {
+func (r InteractiveRequest) GetBoolFromContext(key string) (bool, error) {
 	dataValue, err := r.GetFromContext(key)
 	if err != nil {
 		return false, err
@@ -131,8 +131,8 @@ func (r InteractiveRequest) GetBool(key string) (bool, error) {
 	return false, fmt.Errorf("key '%s' is not a boolean", key)
 }
 
-func (r InteractiveRequest) GetUUID(key string) (uuid.UUID, error) {
-	strValue, err := r.GetString(key)
+func (r InteractiveRequest) GetUUIDFromContext(key string) (uuid.UUID, error) {
+	strValue, err := r.GetStringFromContext(key)
 	if err != nil {
 		return uuid.UUID{}, err
 	}
