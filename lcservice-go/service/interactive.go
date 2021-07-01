@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/google/uuid"
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
 )
 
@@ -56,6 +58,89 @@ type InteractiveRequest struct {
 	Event   Dict
 	Job     *Job
 	Context Dict
+}
+
+func (r InteractiveRequest) GetFromContext(key string) (interface{}, error) {
+	dataValue, found := r.Context[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' not found", key)
+	}
+	return dataValue, nil
+}
+
+func (r InteractiveRequest) GetString(key string) (string, error) {
+	dataValue, err := r.GetFromContext(key)
+	if err != nil {
+		return "", err
+	}
+	value, ok := dataValue.(string)
+	if !ok {
+		return "", fmt.Errorf("key '%s' is not a string", key)
+	}
+	return value, nil
+}
+
+func (r InteractiveRequest) GetEnumValue(key string, requestParams RequestParams) (string, error) {
+	paramDef, found := requestParams[key]
+	if !found {
+		return "", fmt.Errorf("key '%s' is not an expected parameter", key)
+	}
+	if paramDef.Type != RequestParamTypes.Enum {
+		return "", fmt.Errorf("key '%s' is not of enum type", key)
+	}
+	enumValue, err := r.GetString(key)
+	if err != nil {
+		return "", err
+	}
+
+	for _, value := range paramDef.Values {
+		if value == enumValue {
+			return enumValue, nil
+		}
+	}
+	return "", fmt.Errorf("value '%s' is not a valid enum value for key '%s'", enumValue, key)
+}
+
+func (r InteractiveRequest) GetInt(key string) (int, error) {
+	dataValue, err := r.GetFromContext(key)
+	if err != nil {
+		return 0, err
+	}
+	value, ok := dataValue.(int)
+	if !ok {
+		return 0, fmt.Errorf("key '%s' is not an integer", key)
+	}
+	return value, nil
+}
+
+func (r InteractiveRequest) GetBool(key string) (bool, error) {
+	dataValue, err := r.GetFromContext(key)
+	if err != nil {
+		return false, err
+	}
+	value, ok := dataValue.(bool)
+	if ok {
+		return value, nil
+	}
+	strValue, ok := dataValue.(string)
+	if ok {
+		if boolValue, err := strconv.ParseBool(strValue); err == nil {
+			return boolValue, nil
+		}
+	}
+	return false, fmt.Errorf("key '%s' is not a boolean", key)
+}
+
+func (r InteractiveRequest) GetUUID(key string) (uuid.UUID, error) {
+	strValue, err := r.GetString(key)
+	if err != nil {
+		return uuid.UUID{}, err
+	}
+	uuidValue, err := uuid.Parse(strValue)
+	if err != nil {
+		return uuid.UUID{}, fmt.Errorf("could not parse uuid from key '%s'", key)
+	}
+	return uuidValue, nil
 }
 
 type InteractiveCallback = func(InteractiveRequest) Response
