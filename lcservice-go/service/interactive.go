@@ -111,11 +111,27 @@ func NewInteractiveService(descriptor Descriptor, callbacks []InteractiveCallbac
 
 	// Compute the callbacks.
 	is.interactiveCallbacks = map[string]InteractiveCallback{}
+	is.setInteractiveCallbacks(callbacks)
+
+	return is, err
+}
+
+func (is *InteractiveService) setInteractiveCallbacks(callbacks []InteractiveCallback) {
 	for _, cb := range callbacks {
 		is.interactiveCallbacks[is.getCbHash(cb)] = cb
 	}
+}
 
-	return is, err
+func (is *InteractiveService) RegisterCommand(cmdDescriptor CommandDescriptor, interactiveCb ...InteractiveCallback) error {
+	if err := is.cs.desc.addCommand(cmdDescriptor); err != nil {
+		return err
+	}
+	if len(interactiveCb) == 0 {
+		return nil
+	}
+
+	is.setInteractiveCallbacks([]InteractiveCallback{interactiveCb[0]})
+	return nil
 }
 
 func (is *InteractiveService) Init() error {
