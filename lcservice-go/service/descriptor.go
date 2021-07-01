@@ -1,7 +1,6 @@
 package service
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -307,24 +306,16 @@ type DescriptorCallbacks struct {
 }
 
 func (d Descriptor) IsValid() error {
-	commandNames := map[string]struct{}{}
-	for _, command := range d.Commands.Descriptors {
-		if command.Name == "" {
-			return errors.New("command name cannot be empty")
-		}
-		if command.Description == "" {
-			return fmt.Errorf("command '%s' description is empty", command.Name)
-		}
-		if err := requestParamsIsValid(command.Args); err != nil {
-			return err
-		}
-		if _, ok := commandNames[command.Name]; ok {
-			return fmt.Errorf("command %s implemented more than once", command.Name)
-		}
-		commandNames[command.Name] = struct{}{}
-		if command.Handler == nil {
-			return fmt.Errorf("command %s has a nil handler", command.Name)
-		}
+	return d.Commands.isValid()
+}
+
+func (d *Descriptor) addCommand(cmdDescriptor CommandDescriptor) error {
+	newCommandsDescriptor := CommandsDescriptor{
+		Descriptors: append(d.Commands.Descriptors, cmdDescriptor),
 	}
+	if err := newCommandsDescriptor.isValid(); err != nil {
+		return err
+	}
+	d.Commands = newCommandsDescriptor
 	return nil
 }
