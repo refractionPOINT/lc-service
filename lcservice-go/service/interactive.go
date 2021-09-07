@@ -53,11 +53,13 @@ type InteractiveService struct {
 }
 
 type InteractiveRequest struct {
-	Org     *lc.Organization
-	OID     string
-	Event   Dict
-	Job     *Job
-	Context Dict
+	Org            *lc.Organization
+	OID            string
+	SID            string
+	Event          Dict
+	Job            *Job
+	Context        Dict
+	ServiceRequest Request
 }
 
 func (r InteractiveRequest) GetFromContext(key string) (interface{}, error) {
@@ -158,6 +160,7 @@ type inboundDetection struct {
 	Detect  Dict `json:"detect" msgpack:"detect"`
 	Routing struct {
 		InvestigationID string `json:"investigation_id" msgpack:"investigation_id"`
+		SensorID        string `json:"sid,omitempty" msgpack:"sid,omitempty"`
 	} `json:"routing" msgpack:"routing"`
 }
 
@@ -260,10 +263,12 @@ func (is *InteractiveService) onDetection(r Request) Response {
 		return is.originalOnDetection(r)
 	}
 	req := InteractiveRequest{
-		Org:     r.Org,
-		OID:     r.OID,
-		Event:   detection.Detect,
-		Context: ic.Context,
+		Org:            r.Org,
+		OID:            r.OID,
+		SID:            detection.Routing.SensorID,
+		Event:          detection.Detect,
+		Context:        ic.Context,
+		ServiceRequest: r,
 	}
 
 	if ic.JobID != "" {
