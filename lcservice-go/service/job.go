@@ -2,9 +2,12 @@ package service
 
 import (
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"gopkg.in/yaml.v2"
 )
 
 type Job struct {
@@ -33,6 +36,22 @@ type JobAttachment interface {
 type hexDumpAttachment struct {
 	caption string
 	data    string
+}
+
+type yamlAttachment struct {
+	caption string
+	data    string
+}
+
+type jsonAttachment struct {
+	caption string
+	data    string
+}
+
+type tableAttachment struct {
+	caption string
+	headers []string
+	rows    [][]string
 }
 
 func getMSTimestamp() int64 {
@@ -127,6 +146,64 @@ func (h hexDumpAttachment) ToJSON() map[string]interface{} {
 		"att_type": "hex_dump",
 		"caption":  h.caption,
 		"data":     h.data,
+	}
+}
+
+func NewYamlAttachment(caption string, data interface{}) JobAttachment {
+	y, err := yaml.Marshal(data)
+	if err != nil {
+		y = []byte(fmt.Sprintf("%+v", data))
+	}
+	h := yamlAttachment{
+		caption: caption,
+		data:    string(y),
+	}
+	return &h
+}
+
+func (h yamlAttachment) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"att_type": "yaml",
+		"caption":  h.caption,
+		"data":     h.data,
+	}
+}
+
+func NewJSONAttachment(caption string, data interface{}) JobAttachment {
+	y, err := json.Marshal(data)
+	if err != nil {
+		y = []byte(fmt.Sprintf("%+v", data))
+	}
+	h := jsonAttachment{
+		caption: caption,
+		data:    string(y),
+	}
+	return &h
+}
+
+func (h jsonAttachment) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"att_type": "yaml",
+		"caption":  h.caption,
+		"data":     h.data,
+	}
+}
+
+func NewTableAttachment(caption string, headers []string, rows [][]string) JobAttachment {
+	h := tableAttachment{
+		caption: caption,
+		headers: headers,
+		rows:    rows,
+	}
+	return &h
+}
+
+func (h tableAttachment) ToJSON() map[string]interface{} {
+	return map[string]interface{}{
+		"att_type": "table",
+		"caption":  h.caption,
+		"headers":  h.headers,
+		"rows":     h.rows,
 	}
 }
 
