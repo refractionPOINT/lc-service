@@ -119,6 +119,10 @@ func (j Job) ToJSON() map[string]interface{} {
 	return d
 }
 
+func (j Job) MarshalJSON() ([]byte, error) {
+	return json.Marshal(j.ToJSON())
+}
+
 func (e JobEntry) ToJSON() map[string]interface{} {
 	a := []map[string]interface{}{}
 	for _, at := range e.attachments {
