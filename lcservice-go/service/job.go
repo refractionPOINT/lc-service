@@ -120,8 +120,7 @@ func (j Job) ToJSON() map[string]interface{} {
 }
 
 func (j Job) MarshalJSON() ([]byte, error) {
-	asJSON := j.ToJSON()
-	return json.Marshal(asJSON)
+	return json.Marshal(j.ToJSON())
 }
 
 func (e JobEntry) ToJSON() map[string]interface{} {
