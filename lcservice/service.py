@@ -163,7 +163,7 @@ class Service( object ):
             for k, v in self._supportedRequestParameters.items():
                 if not v.get( 'is_required', False ):
                     continue
-                if k not in request.data:
+                if request.data.get( k, None ) is None:
                     return self.response( isSuccess = False,
                                           error = "missing parameter %s" % ( k, ) )
 
