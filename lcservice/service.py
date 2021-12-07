@@ -150,6 +150,8 @@ class Service( object ):
         # validation on the parameters.
         if 'request' == eType and 0 != len( self._supportedRequestParameters ):
             for k, v in request.data.items():
+                if v is None:
+                    continue
                 definition = self._supportedRequestParameters.get( k, None )
                 if definition is None:
                     continue
