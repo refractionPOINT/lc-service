@@ -362,7 +362,7 @@ func (is *InteractiveService) removeInteractiveRule(org *lc.Organization) error 
 	return nil
 }
 
-func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
+func (is *InteractiveService) GetTaskingOptionsForTrackedTasking(opts TrackedTaskingOptions, cb InteractiveCallback) (lc.TaskingOptions, error) {
 	cbHash := is.getCbHash(cb)
 	if _, ok := is.interactiveCallbacks[cbHash]; !ok {
 		panic(fmt.Sprintf("tracked sensor task callback not registered: %v", cbHash))
@@ -374,13 +374,22 @@ func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opt
 		Context:    opts.Context,
 	})
 	if err != nil {
+		return lc.TaskingOptions{}, err
+	}
+
+	return lc.TaskingOptions{
+		InvestigationID:      is.detectionName,
+		InvestigationContext: string(serialCtx),
+	}, nil
+}
+
+func (is *InteractiveService) TrackedTasking(sensor *lc.Sensor, task string, opts TrackedTaskingOptions, cb InteractiveCallback) error {
+	to, err := is.GetTaskingOptionsForTrackedTasking(opts, cb)
+	if err != nil {
 		return err
 	}
 
-	if err := sensor.Task(task, lc.TaskingOptions{
-		InvestigationID:      is.detectionName,
-		InvestigationContext: string(serialCtx),
-	}); err != nil {
+	if err := sensor.Task(task, to); err != nil {
 		return err
 	}
 	return nil
