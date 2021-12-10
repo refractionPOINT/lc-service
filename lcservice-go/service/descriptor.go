@@ -66,7 +66,11 @@ func (r Request) GetInt(key string) (int, error) {
 	}
 	value, ok := dataValue.(int)
 	if !ok {
-		return 0, fmt.Errorf("key '%s' is not an integer", key)
+		f, ok := dataValue.(float64)
+		if !ok {
+			return 0, fmt.Errorf("key '%s' is not an integer", key)
+		}
+		value = int(f)
 	}
 	return value, nil
 }
