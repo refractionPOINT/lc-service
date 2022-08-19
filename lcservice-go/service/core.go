@@ -146,48 +146,10 @@ func (c *commandHandlerResolver) get(requestEvent RequestEvent) ServiceCallback 
 }
 
 func (r *commandHandlerResolver) preHandlerHook(request *Request) error {
-	rid, err := request.GetRoomID()
-	if err != nil {
-		return err
-	}
-
-	// Test compat, ignore if no SDK.
-	if request.Org == nil {
-		return nil
-	}
-
-	mid, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
-		Type:    lc.CommsMessageTypes.CommandAck,
-		Content: request.Event.Data,
-	})
-	if err != nil {
-		return err
-	}
-	request.Refs.AckMessageID = mid
-
 	return nil
 }
 
 func (r *commandHandlerResolver) errorHandlerHook(request Request, errorMessage string) error {
-	amid := request.GetAckMessageID()
-	if amid == "" {
-		return nil
-	}
-	rid, err := request.GetRoomID()
-	if err != nil {
-		return err
-	}
-
-	if _, err := request.Org.Comms().Room(rid).Post(lc.NewMessage{
-		Parent: amid,
-		Type:   lc.CommsMessageTypes.Error,
-		Content: lc.MessageError{
-			Message: errorMessage,
-		},
-	}); err != nil {
-		return err
-	}
-
 	return nil
 }
 
