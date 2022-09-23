@@ -451,7 +451,7 @@ class Service( object ):
         '''
         if self._backgroundStopEvent.wait( inDelay ):
             return
-        t = threading.Thread( target = self._managedThread, args = ( func, *args ), kw_args = kw_args )
+        t = threading.Thread( target = self._managedThread, args = ( func, *args ), kwargs = kw_args )
         self._threads.append( t )
         t.start()
 
