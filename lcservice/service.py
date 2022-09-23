@@ -419,7 +419,7 @@ class Service( object ):
                 raise
             finally:
                 if not self._backgroundStopEvent.wait( 0 ):
-                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kw_args = kw_args )
+                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kwargs = kw_args )
                     self._threads.append( t )
                     t.start()
 
@@ -431,7 +431,7 @@ class Service( object ):
                 raise
             finally:
                 if not self._backgroundStopEvent.wait( 0 ):
-                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kw_args = kw_args )
+                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kwargs = kw_args )
                     self._threads.append( t )
                     t.start()
 
