@@ -1,10 +1,8 @@
 import limacharlie
 from . import __version__ as lcservice_version
 from .jobs import Job
-import gevent
-from gevent.lock import BoundedSemaphore
-import gevent.pool
-import gevent.util
+import threading
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 import time
 import hmac
@@ -42,10 +40,10 @@ class Service( object ):
         self._serviceName = serviceName
         self._originSecret = originSecret
         self._startedAt = int( time.time() )
-        self._lock = BoundedSemaphore()
-        self._backgroundStopEvent = gevent.event.Event()
+        self._lock = threading.Lock()
+        self._backgroundStopEvent = threading.Event()
         self._nCallsInProgress = 0
-        self._threads = gevent.pool.Group()
+        self._threads = []
         self._detectSubscribed = set()
         self._internalResources = {}
         self._supportedRequestParameters = {}
@@ -393,12 +391,10 @@ class Service( object ):
         # yet executed. This way we can schedule calls a long time in
         # the future and only wait for it if it actually started executing.
         try:
-            self._threads.add( gevent.util.getcurrent() )
+            self._threads.append( threading.current_thread() )
             if self._backgroundStopEvent.wait( 0 ):
                 return
             func( *args, **kw_args )
-        except gevent.GreenletExit:
-            raise
         except:
             self.logCritical( traceback.format_exc() )
 
@@ -423,17 +419,21 @@ class Service( object ):
                 raise
             finally:
                 if not self._backgroundStopEvent.wait( 0 ):
-                    gevent.spawn_later( delay, self._schedule, delay, func, *args, **kw_args )
+                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kwargs = kw_args )
+                    self._threads.append( t )
+                    t.start()
 
     def _schedule( self, delay, func, *args, **kw_args ):
-        if not self._backgroundStopEvent.wait( 0 ):
+        if not self._backgroundStopEvent.wait( delay ):
             try:
                 self._managedThread( func, *args, **kw_args )
             except:
                 raise
             finally:
                 if not self._backgroundStopEvent.wait( 0 ):
-                    gevent.spawn_later( delay, self._schedule, delay, func, *args, **kw_args )
+                    t = threading.Thread( target = self._schedule, args = ( delay, func, *args ), kwargs = kw_args )
+                    self._threads.append( t )
+                    t.start()
 
     def delay( self, inDelay, func, *args, **kw_args ):
         '''Delay the execution of a function.
@@ -449,22 +449,43 @@ class Service( object ):
         :param args: positional arguments to the function
         :param kw_args: keyword arguments to the function
         '''
-        gevent.spawn_later( inDelay, self._managedThread, func, *args, **kw_args )
+        def _delayTread():
+            if self._backgroundStopEvent.wait( inDelay ):
+                return
+            self._managedThread( func, *args, **kw_args )
+        t = threading.Thread( target = _delayTread )
+        self._threads.append( t )
+        t.start()
 
     def parallelExec( self, f, objects, timeout = None, maxConcurrent = None ):
-        '''Applies a function to N objects in parallel in up to maxConcurrent threads and waits to return the list results.
-
-        :param f: the function to apply
-        :param objects: the collection of objects to apply using f
-        :param timeouts: number of seconds to wait for results, or None for indefinitely
-        :param maxConcurrent: maximum number of concurrent tasks
-
-        :returns: a list of return values from f(object), or Exception if one occured.
+        '''Execute a function on a list of objects in parallel.
+        Args:
+            f (callable): function to apply to each object.
+            objects (iterable): list of objects to apply the function on.
+            timeout (int): maximum number of seconds to wait for collection of calls.
+            maxConcurrent (int): maximum number of function application to do concurrently.
+        Returns:
+            list of return values (or Exception if an exception occured).
         '''
 
-        g = gevent.pool.Pool( size = maxConcurrent )
-        results = g.imap_unordered( lambda o: _retExecOrExc( f, o, timeout ), tuple( objects ) )
+        results = []
+        with ThreadPoolExecutor( max_workers=maxConcurrent ) as executor:
+            future = executor.map( lambda o: self._retExecOrExc( f, o, timeout ), objects, timeout = timeout )
+            results = future.result()
         return list( results )
+
+    def _retExecOrExc( self, f, o, timeout ):
+        try:
+            return f( o )
+        except ( Exception, TimeoutError ) as e:
+            return e
+
+    def _retExecOrExcWithKey( self, f, o, timeout ):
+        k, o = o
+        try:
+            return ( k, f( o ) )
+        except ( Exception, TimeoutError ) as e:
+            return e
 
     def parallelExecEx( self, f, objects, timeout = None, maxConcurrent = None ):
         '''Applies a function to N objects in parallel in up to maxConcurrent threads and waits to return the generated results.
@@ -477,8 +498,11 @@ class Service( object ):
         :returns: a generator of tuples( key name, f(object) ), or Exception if one occured.
         '''
 
-        g = gevent.pool.Pool( size = maxConcurrent )
-        return g.imap_unordered( lambda o: _retExecOrExcWithKey( f, o, timeout ), objects.items() )
+        results = []
+        with ThreadPoolExecutor( max_workers=maxConcurrent ) as executor:
+            future = executor.map( lambda o: self._retExecOrExcWithKey( f, o, timeout ), objects.items(), timeout = timeout )
+            results = future.result()
+        return list( results )
 
     # LC Service Lifecycle Functions
     def _onStartup( self ):
@@ -494,7 +518,8 @@ class Service( object ):
 
     def _onShutdown( self ):
         self._backgroundStopEvent.set()
-        self._threads.join( timeout = 30 )
+        for t in self._threads:
+            t.join( timeout = 30 )
         self.onShutdown()
 
     def onShutdown( self ):
@@ -658,28 +683,6 @@ class Service( object ):
         '''Called every 30 days once per sensor.
         '''
         return self.responseNotImplemented()
-
-# Simple wrappers to enable clean parallel executions.
-def _retExecOrExc( f, o, timeout ):
-    try:
-        if timeout is None:
-            return f( o )
-        else:
-            with gevent.Timeout( timeout ):
-                return f( o )
-    except ( Exception, gevent.Timeout ) as e:
-        return e
-
-def _retExecOrExcWithKey( f, o, timeout ):
-    k, o = o
-    try:
-        if timeout is None:
-            return ( k, f( o ) )
-        else:
-            with gevent.Timeout( timeout ):
-                return ( k, f( o ) )
-    except ( Exception, gevent.Timeout ) as e:
-        return ( k, e )
 
 class InteractiveService( Service ):
     '''InteractiveService provide for asynchronous tasking of sensors.

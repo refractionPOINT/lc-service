@@ -21,9 +21,6 @@ the CherryPy project for an HTTP server, and a Google Cloud Function compatible
 server to deploy without containers or infrastructure. Writing transports is easy
 so feel free to suggest new ones.
 
-***Cloud Function Transport*** is currently having an issue with the initialization
-and monkey patching of gevent in the Cloud Function environment.
-
 ## Using
 
 The RI is structure so that all you have to do is inherit from the main Service class:
