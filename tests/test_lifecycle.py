@@ -161,6 +161,7 @@ def test_schedules():
 
     n = 0
     def _inc():
+        global n
         n += 1
 
     svc.delay( 5, _inc )
