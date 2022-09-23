@@ -470,8 +470,7 @@ class Service( object ):
 
         results = []
         with ThreadPoolExecutor( max_workers=maxConcurrent ) as executor:
-            future = executor.map( lambda o: self._retExecOrExc( f, o, timeout ), objects, timeout = timeout )
-            results = future.result()
+            results = executor.map( lambda o: self._retExecOrExc( f, o, timeout ), objects, timeout = timeout )
         return list( results )
 
     def _retExecOrExc( self, f, o, timeout ):
@@ -500,8 +499,7 @@ class Service( object ):
 
         results = []
         with ThreadPoolExecutor( max_workers=maxConcurrent ) as executor:
-            future = executor.map( lambda o: self._retExecOrExcWithKey( f, o, timeout ), objects.items(), timeout = timeout )
-            results = future.result()
+            results = executor.map( lambda o: self._retExecOrExcWithKey( f, o, timeout ), objects.items(), timeout = timeout )
         return list( results )
 
     # LC Service Lifecycle Functions
