@@ -449,9 +449,11 @@ class Service( object ):
         :param args: positional arguments to the function
         :param kw_args: keyword arguments to the function
         '''
-        if self._backgroundStopEvent.wait( inDelay ):
-            return
-        t = threading.Thread( target = self._managedThread, args = ( func, *args ), kwargs = kw_args )
+        def _delayTread():
+            if self._backgroundStopEvent.wait( inDelay ):
+                return
+            self._managedThread( func, *args, **kw_args )
+        t = threading.Thread( target = _delayTread )
         self._threads.append( t )
         t.start()
 

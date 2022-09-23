@@ -156,10 +156,11 @@ if __name__ == '__main__':
     test_create_service()
 
 
+n = 0
 def test_schedules():
+    global n
     svc = lcservice.Service( 'test-service', None )
 
-    n = 0
     def _inc():
         global n
         n += 1
@@ -171,8 +172,10 @@ def test_schedules():
     n = 0
 
     svc.schedule( 2, _inc )
-    assert( 0 == n )
-    time.sleep( 2.1 )
     assert( 1 == n )
     time.sleep( 2.1 )
     assert( 2 == n )
+    time.sleep( 2.1 )
+    assert( 3 == n )
+
+    svc._onShutdown()
