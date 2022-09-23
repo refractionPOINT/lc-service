@@ -179,3 +179,17 @@ def test_schedules():
     assert( 3 == n )
 
     svc._onShutdown()
+
+def test_parallel():
+    global n
+    svc = lcservice.Service( 'test-service', None )
+
+    n = 0
+    def _inc():
+        global n
+        n += 1
+
+    res = svc.parallelExec( _inc, [ 1, 2, 3, 4 ], 10, 5 )
+    assert( 4 == len( res ) )
+
+    svc._onShutdown()
