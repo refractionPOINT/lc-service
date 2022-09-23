@@ -1,5 +1,6 @@
 import lcservice
 import uuid
+import time
 
 TEST_SECRET = 'test-secret'
 
@@ -153,3 +154,24 @@ def test_parameters():
 
 if __name__ == '__main__':
     test_create_service()
+
+
+def test_schedules():
+    svc = lcservice.Service( 'test-service', None )
+
+    n = 0
+    def _inc():
+        n += 1
+
+    svc.delay( 5, _inc )
+    assert( 0 == n )
+    time.sleep( 6 )
+
+    n = 0
+
+    svc.schedule( 2, _inc )
+    assert( 0 == n )
+    time.sleep( 2.1 )
+    assert( 1 == n )
+    time.sleep( 2.1 )
+    assert( 2 == n )
