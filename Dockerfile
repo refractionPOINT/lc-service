@@ -1,5 +1,7 @@
 FROM python:3.8-slim
 
+RUN apt update && apt -y upgrade
+
 # Install base library.
 ADD . /lc-service
 WORKDIR /lc-service
