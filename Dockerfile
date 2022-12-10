@@ -7,6 +7,6 @@ RUN apt install -y python3.10
 # Install base library.
 ADD . /lc-service
 WORKDIR /lc-service
-RUN python ./setup.py install
+RUN python3.10 ./setup.py install
 WORKDIR /
 RUN rm -rf /lc-service
