@@ -816,11 +816,11 @@ class InteractiveService( Service ):
         sync.pushRules( rules )
 
     def _removeInteractiveRule( self, lc ):
-        ns = list(self._interactiveRule.values())[0].get( 'namespace', None )
-        try:
-            lc.del_rule( self._rootInvestigationId, namespace = ns )
-        except:
-            self.logCritical( traceback.format_exc() )
+        for ruleName, rule in self._interactiveRule.items():
+            try:
+                lc.del_rule( ruleName, namespace = rule.get( 'namespace', None ) )
+            except:
+                self.logCritical( traceback.format_exc() )
 
     def wrapSdk( self, *args, **kwargs ):
         this = self
