@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/google/uuid"
 	lc "github.com/refractionPOINT/go-limacharlie/limacharlie"
