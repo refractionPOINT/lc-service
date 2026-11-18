@@ -4,3 +4,5 @@ steps:
   - name: 'golang'
     dir: lcservice-go
     args: ['go', 'test', './...', '-v']
+options:
+  logging: CLOUD_LOGGING_ONLY
